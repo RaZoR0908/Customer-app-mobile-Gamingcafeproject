@@ -1,16 +1,13 @@
 import React from 'react';
-// 1. Import the Image component from react-native
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
 const CafeCard = ({ cafe, onPress }) => {
-  // 2. We'll show the first photo from the cafe's photo array, or a placeholder if it's empty.
   const imageUrl = cafe.photos && cafe.photos.length > 0 
     ? cafe.photos[0] 
     : 'https://placehold.co/400x200/222/fff?text=Gaming+Cafe';
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
-      {/* 3. Add the Image component to display the cafe's picture */}
       <Image source={{ uri: imageUrl }} style={styles.image} />
       <View style={styles.textContainer}>
         <Text style={styles.name}>{cafe.name}</Text>
@@ -26,24 +23,26 @@ const CafeCard = ({ cafe, onPress }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 15,
+    borderRadius: 12, // Slightly more rounded corners
+    marginBottom: 20, // Increased spacing
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden', // Ensures the image corners are rounded
+    shadowRadius: 6,
+    elevation: 5,
   },
   image: {
     width: '100%',
-    height: 150,
+    // Increased the height of the image
+    height: 180, 
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
   },
   textContainer: {
     padding: 15,
   },
   name: {
-    fontSize: 18,
+    fontSize: 20, // Larger font for the name
     fontWeight: 'bold',
     marginBottom: 5,
   },

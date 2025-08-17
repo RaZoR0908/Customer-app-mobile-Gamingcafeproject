@@ -1,30 +1,30 @@
 import axios from 'axios';
 
 // The base URL of our backend API for cafes.
-// Remember to use your computer's local IP address.
-const API_URL = 'http://192.168.0.103:5000/api/cafes/';
+// IMPORTANT: Make sure this IP address matches the result of 'ipconfig' on your computer.
+// FIX: Removed the trailing slash at the end of the URL
+const API_URL = 'http://192.168.0.105:5000/api/cafes';
 
 // This function sends a GET request to fetch all cafes.
 const getAllCafes = () => {
   return axios.get(API_URL);
 };
 
-// ADD THIS NEW FUNCTION
 // This function finds cafes near a specific location.
 const findNearbyCafes = (latitude, longitude) => {
-  // We send the coordinates and a search distance (e.g., 10km) as query parameters.
-  return axios.get(`${API_URL}near-me?lat=${latitude}&lng=${longitude}&distance=10`);
+  // Now the URL will be constructed correctly: .../cafes/near-me?lat=...
+  return axios.get(`${API_URL}/near-me?lat=${latitude}&lng=${longitude}&distance=10`);
 };
-// ADD THIS NEW FUNCTION
+
 // This function gets a single cafe's details by its ID.
 const getCafeById = (id) => {
-  return axios.get(API_URL + id);
+  return axios.get(`${API_URL}/${id}`);
 };
 
 
 const cafeService = {
   getAllCafes,
-  findNearbyCafes, // Add the new function here
+  findNearbyCafes,
   getCafeById,
 };
 

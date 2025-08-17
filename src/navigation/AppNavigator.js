@@ -5,7 +5,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
-import CafeDetailScreen from '../screens/CafeDetailScreen'; // 1. Import the new screen
+import CafeDetailScreen from '../screens/CafeDetailScreen';
+import BookingScreen from '../screens/BookingScreen'; // 1. Import the new screen
 import { useAuth } from '../context/AuthContext';
 import { View, ActivityIndicator } from 'react-native';
 
@@ -27,19 +28,22 @@ const AppStack = () => (
     }}
   >
     <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-    {/* 2. Add the CafeDetailScreen to the stack */}
     <Stack.Screen 
       name="CafeDetails" 
       component={CafeDetailScreen} 
-      // This sets the header title to the name of the cafe we passed in
       options={({ route }) => ({ title: route.params.cafeName })} 
+    />
+    {/* 2. Add the BookingScreen to the stack */}
+    <Stack.Screen 
+      name="Booking" 
+      component={BookingScreen} 
+      options={{ title: 'Select Your Slot' }} 
     />
   </Stack.Navigator>
 );
 
 const AppNavigator = () => {
   const { user, loading } = useAuth();
-
   if (loading) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -47,7 +51,6 @@ const AppNavigator = () => {
       </View>
     );
   }
-
   return (
     <NavigationContainer>
       {user ? <AppStack /> : <AuthStack />}

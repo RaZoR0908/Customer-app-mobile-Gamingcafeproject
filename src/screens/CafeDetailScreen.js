@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-// 1. Import SafeAreaView
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Button, Image, Dimensions, Modal, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, Dimensions, Modal, TouchableOpacity, SafeAreaView } from 'react-native';
 import cafeService from '../services/cafeService';
 import Swiper from 'react-native-swiper';
 import ImageViewer from 'react-native-image-zoom-viewer';
+import { Feather } from '@expo/vector-icons'; // For icons
 
 const { width } = Dimensions.get('window');
 
@@ -49,9 +49,12 @@ const CafeDetailScreen = ({ route, navigation }) => {
   const viewerImages = images.map(url => ({ url }));
 
   return (
-    // 2. Replace the root View with SafeAreaView
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
+      <ScrollView 
+        style={styles.container} 
+        // Add paddingBottom to ensure content doesn't hide behind the footer
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         <View style={{ height: 250 }}>
           <Swiper 
             style={styles.swiper} 
@@ -99,10 +102,18 @@ const CafeDetailScreen = ({ route, navigation }) => {
               </View>
             ))}
           </View>
-
-          <Button title="Book a Slot" onPress={() => alert('TODO: Navigate to Booking Screen')} />
         </View>
       </ScrollView>
+
+      {/* Sticky Footer */}
+      <View style={styles.footer}>
+        <TouchableOpacity 
+          style={styles.bookButton} 
+          onPress={() => navigation.navigate('Booking', { cafe: cafe })}
+        >
+          <Text style={styles.bookButtonText}>Book a Slot</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal visible={isViewerOpen} transparent={true} onRequestClose={() => setIsViewerOpen(false)}>
         <ImageViewer 
@@ -128,7 +139,6 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   contentContainer: { 
     padding: 20,
-    paddingBottom: 40, // 3. Add extra padding at the bottom
   },
   name: { fontSize: 26, fontWeight: 'bold', marginBottom: 5 },
   address: { fontSize: 16, color: '#666', marginBottom: 10 },
@@ -146,6 +156,29 @@ const styles = StyleSheet.create({
   },
   systemPrice: { fontSize: 16, fontWeight: 'bold' },
   errorText: { color: 'red' },
+  // --- NEW Styles for Sticky Footer ---
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 20,
+    paddingBottom: 30, // Extra padding for home bar
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  bookButton: { 
+    backgroundColor: '#007bff', 
+    paddingVertical: 15, 
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  bookButtonText: { 
+    color: '#fff', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
 });
 
 export default CafeDetailScreen;

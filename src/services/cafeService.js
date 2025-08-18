@@ -3,7 +3,7 @@ import axios from 'axios';
 // The base URL of our backend API for cafes.
 // IMPORTANT: Make sure this IP address matches the result of 'ipconfig' on your computer.
 // FIX: Removed the trailing slash at the end of the URL
-const API_URL = 'http://192.168.0.105:5000/api/cafes';
+const API_URL = 'http://192.168.0.102:5000/api/cafes';
 
 // This function sends a GET request to fetch all cafes.
 const getAllCafes = () => {

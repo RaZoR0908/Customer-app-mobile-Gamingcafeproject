@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Image, Dimensions, Modal, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Button, Image, Dimensions, Modal, TouchableOpacity, SafeAreaView } from 'react-native';
 import cafeService from '../services/cafeService';
 import Swiper from 'react-native-swiper';
 import ImageViewer from 'react-native-image-zoom-viewer';
-import { Feather } from '@expo/vector-icons'; // For icons
 
 const { width } = Dimensions.get('window');
 
@@ -52,7 +51,6 @@ const CafeDetailScreen = ({ route, navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView 
         style={styles.container} 
-        // Add paddingBottom to ensure content doesn't hide behind the footer
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <View style={{ height: 250 }}>
@@ -105,7 +103,7 @@ const CafeDetailScreen = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Sticky Footer */}
+      {/* Sticky Footer with a single button */}
       <View style={styles.footer}>
         <TouchableOpacity 
           style={styles.bookButton} 
@@ -129,17 +127,12 @@ const CafeDetailScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  safeArea: { flex: 1, backgroundColor: '#fff' },
   swiper: {},
   image: { width: '100%', height: '100%' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   container: { flex: 1 },
-  contentContainer: { 
-    padding: 20,
-  },
+  contentContainer: { padding: 20 },
   name: { fontSize: 26, fontWeight: 'bold', marginBottom: 5 },
   address: { fontSize: 16, color: '#666', marginBottom: 10 },
   hours: { fontSize: 14, color: '#666', marginBottom: 20, fontStyle: 'italic' },
@@ -149,21 +142,16 @@ const styles = StyleSheet.create({
   roomType: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
   systemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
   systemType: { fontSize: 16 },
-  systemSpecs: {
-    fontSize: 12,
-    color: '#888',
-    marginTop: 2,
-  },
+  systemSpecs: { fontSize: 12, color: '#888', marginTop: 2 },
   systemPrice: { fontSize: 16, fontWeight: 'bold' },
   errorText: { color: 'red' },
-  // --- NEW Styles for Sticky Footer ---
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
     padding: 20,
-    paddingBottom: 30, // Extra padding for home bar
+    paddingBottom: 30,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#eee',

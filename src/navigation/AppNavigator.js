@@ -6,7 +6,8 @@ import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CafeDetailScreen from '../screens/CafeDetailScreen';
-import BookingScreen from '../screens/BookingScreen'; // 1. Import the new screen
+import BookingScreen from '../screens/BookingScreen';
+import MyBookingsScreen from '../screens/MyBookingsScreen'; // 1. Import the new screen
 import { useAuth } from '../context/AuthContext';
 import { View, ActivityIndicator } from 'react-native';
 
@@ -33,11 +34,16 @@ const AppStack = () => (
       component={CafeDetailScreen} 
       options={({ route }) => ({ title: route.params.cafeName })} 
     />
-    {/* 2. Add the BookingScreen to the stack */}
     <Stack.Screen 
       name="Booking" 
       component={BookingScreen} 
       options={{ title: 'Select Your Slot' }} 
+    />
+    {/* 2. Add the MyBookingsScreen to the stack */}
+    <Stack.Screen 
+      name="MyBookings" 
+      component={MyBookingsScreen} 
+      options={{ title: 'My Bookings' }} 
     />
   </Stack.Navigator>
 );

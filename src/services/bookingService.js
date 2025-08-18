@@ -1,6 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
+// Remember to use your computer's local IP address
 const API_URL = 'http://192.168.0.102:5000/api/bookings/';
 
 // Helper function to get the user's token
@@ -20,16 +21,23 @@ const createBooking = async (bookingData) => {
   return response.data;
 };
 
-// ADD THIS NEW FUNCTION
 // This function gets the real-time availability for a cafe on a specific date.
 const getSlotAvailability = (cafeId, date) => {
-  // This is a public endpoint, so no auth header is needed.
   return axios.get(`${API_URL}availability/${cafeId}?date=${date}`);
+};
+
+// ADD THIS NEW FUNCTION
+// This function gets all bookings for the logged-in customer.
+const getMyBookings = async () => {
+  const config = { headers: await getAuthHeader() };
+  const response = await axios.get(API_URL + 'my-bookings', config);
+  return response.data;
 };
 
 const bookingService = {
   createBooking,
-  getSlotAvailability, // Add the new function
+  getSlotAvailability,
+  getMyBookings, // Add the new function
 };
 
 export default bookingService;

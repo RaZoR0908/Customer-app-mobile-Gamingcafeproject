@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, SafeAreaView } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import cafeService from '../services/cafeService';
 import CafeCard from '../components/CafeCard';
 import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
+// 1. Import the hook to get the device's safe area dimensions
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Helper function to calculate distance (we'll use this to find nearby cafes)
 const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -25,22 +27,27 @@ const HomeScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [allCafes, setAllCafes] = useState([]); // Holds all cafes from DB
   const [displayedCafes, setDisplayedCafes] = useState([]); // Cafes currently shown on screen
-  // 1. Add new state to remember the initial list of cafes (either nearby or all)
-  const [initialList, setInitialList] = useState([]);
+  const [initialList, setInitialList] = useState([]); // Remembers the initial list of nearby cafes
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [listTitle, setListTitle] = useState('Cafes Near You');
 
+  // 2. Get the safe area insets (padding) for the top and bottom of the screen
+  const insets = useSafeAreaInsets();
+
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        // 1. Fetch ALL cafes first and store them.
         const allCafesResponse = await cafeService.getAllCafes();
         setAllCafes(allCafesResponse.data);
 
+        // 2. Now, try to get the user's location.
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           setError('Permission to access location was denied.');
+          // If no permission, just show all cafes by default.
           setDisplayedCafes(allCafesResponse.data);
           setInitialList(allCafesResponse.data); // Set initial list to all cafes
           setListTitle('All Cafes');
@@ -50,12 +57,13 @@ const HomeScreen = ({ navigation }) => {
         let location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
 
+        // 3. Filter the full list to find nearby cafes.
         const nearby = allCafesResponse.data.filter(cafe => {
           const distance = getDistance(
             latitude,
             longitude,
-            cafe.location.coordinates[1],
-            cafe.location.coordinates[0]
+            cafe.location.coordinates[1], // Note: latitude is the second element
+            cafe.location.coordinates[0]  // Note: longitude is the first element
           );
           return distance < 10; // Cafes within 10km
         });
@@ -84,7 +92,7 @@ const HomeScreen = ({ navigation }) => {
       setDisplayedCafes(newData);
       setListTitle(`Search Results for "${query}"`);
     } else {
-      // 2. If search is cleared, revert to the initial list
+      // If search is cleared, revert to the initial list (which is the nearby cafes)
       setDisplayedCafes(initialList);
       // Determine the correct title based on whether the initial list was nearby or all
       setListTitle(error ? 'All Cafes' : 'Cafes Near You');
@@ -101,13 +109,18 @@ const HomeScreen = ({ navigation }) => {
   }
 
   return (
+    // 3. Use a regular View as the root, as we will apply padding manually
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View>
+      {/* 4. Apply the top inset as padding to the header */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <TouchableOpacity style={styles.headerIconLeft} onPress={() => navigation.navigate('MyBookings')}>
+          <Feather name="book-open" size={24} color="#333" />
+        </TouchableOpacity>
+        <View style={styles.welcomeContainer}>
           <Text style={styles.welcomeText}>Welcome,</Text>
           <Text style={styles.userName}>{user?.name}!</Text>
         </View>
-        <TouchableOpacity onPress={logout}>
+        <TouchableOpacity style={styles.headerIconRight} onPress={logout}>
           <Feather name="log-out" size={24} color="#333" />
         </TouchableOpacity>
       </View>
@@ -126,7 +139,7 @@ const HomeScreen = ({ navigation }) => {
           />
         )}
         keyExtractor={(item) => item._id}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 20 }}
         ListHeaderComponent={
           <>
             <Text style={styles.listTitle}>{listTitle}</Text>
@@ -164,15 +177,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5' 
   },
   header: { 
-    paddingTop: 50, 
     paddingHorizontal: 20, 
-    paddingBottom: 15, 
+    paddingBottom: 10, // Only bottom padding is fixed
     backgroundColor: '#fff', 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+  },
+  headerIconLeft: {
+    width: 40,
+    alignItems: 'flex-start',
+  },
+  headerIconRight: {
+    width: 40,
+    alignItems: 'flex-end',
+  },
+  welcomeContainer: {
+    flex: 1,
+    alignItems: 'center',
   },
   welcomeText: {
     fontSize: 16,

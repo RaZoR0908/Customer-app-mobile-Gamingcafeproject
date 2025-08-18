@@ -3,7 +3,7 @@ import * as SecureStore from 'expo-secure-store'; // 1. Import the new library
 
 // The base URL of our backend API.
 // Remember to use your computer's local IP address for physical devices.
-const API_URL = 'http://192.168.0.102:5000/api/auth/';
+const API_URL = 'http://192.168.0.107:5000/api/auth/';
 // This function sends a POST request to the customer registration endpoint
 const register = (name, email, password) => {
   return axios.post(API_URL + 'register', {

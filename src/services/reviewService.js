@@ -1,7 +1,7 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'http://192.168.0.105:5000/api/reviews/';
+const API_URL = 'http://192.168.0.102:5000/api/reviews/';
 
 // Helper function to get the user's token
 const getAuthHeader = async () => {

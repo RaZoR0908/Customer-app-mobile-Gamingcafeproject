@@ -59,9 +59,11 @@ const CafeDetailScreen = ({ route, navigation }) => {
   const COMMENT_LIMIT = 500;
   const INITIAL_REVIEWS_SHOW = 3;
 
-  // Image viewer
-  const [isViewerOpen, setIsViewerOpen] = useState(false);
-  const [imageIndex, setImageIndex] = useState(0);
+     // Image viewer
+   const [isViewerOpen, setIsViewerOpen] = useState(false);
+   const [imageIndex, setImageIndex] = useState(0);
+   
+   
 
   // ✅ Fetch data when screen is focused
   useFocusEffect(
@@ -69,6 +71,8 @@ const CafeDetailScreen = ({ route, navigation }) => {
       const fetchAllData = async () => {
         setLoading(true);
         try {
+          console.log('🔍 Fetching cafe details for ID:', cafeId);
+          
           const cafePromise = cafeService.getCafeById(cafeId);
           const reviewsPromise = reviewService.getReviewsForCafe(cafeId);
           const [cafeResponse, reviewsResponse] = await Promise.all([
@@ -76,10 +80,37 @@ const CafeDetailScreen = ({ route, navigation }) => {
             reviewsPromise
           ]);
           
+                     console.log('✅ Cafe data received:', cafeResponse.data);
+           console.log('✅ Reviews data received:', reviewsResponse.data);
+           
+           // Debug: Check contact number and description
+           console.log('📞 Contact Number:', cafeResponse.data.contactNumber);
+           console.log('📝 Description:', cafeResponse.data.description);
+           console.log('🔍 Contact Number exists:', !!cafeResponse.data.contactNumber);
+           console.log('🔍 Description exists:', !!cafeResponse.data.description);
+           
+           // Debug: Check the structure of rooms and systems
+           if (cafeResponse.data.rooms) {
+             console.log('🏠 Rooms structure:');
+             cafeResponse.data.rooms.forEach((room, roomIndex) => {
+               console.log(`   Room ${roomIndex}:`, room.name);
+               if (room.systems) {
+                 room.systems.forEach((system, sysIndex) => {
+                   console.log(`     System ${sysIndex}:`, {
+                     type: system.type,
+                     specs: system.specs,
+                     specsType: typeof system.specs
+                   });
+                 });
+               }
+             });
+           }
+          
           setCafe(cafeResponse.data);
           setReviews(reviewsResponse.data);
         } catch (err) {
-          setError('Failed to load cafe details and reviews.');
+          console.error('❌ Error fetching cafe details:', err);
+          setError(`Failed to load cafe details and reviews: ${err.message}`);
         } finally {
           setLoading(false);
         }
@@ -134,11 +165,22 @@ const CafeDetailScreen = ({ route, navigation }) => {
   }
 
   if (error || !cafe) {
-    return <View style={styles.centered}><Text style={styles.errorText}>{error || 'Cafe not found.'}</Text></View>;
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>{error || 'Cafe not found.'}</Text>
+        <Text style={styles.errorText}>Cafe ID: {cafeId}</Text>
+      </View>
+    );
   }
 
-  const images = cafe.photos && cafe.photos.length > 0
-    ? cafe.photos
+  // Debug: Check current cafe state values
+  console.log('🎯 Current cafe state - Contact Number:', cafe.contactNumber);
+  console.log('🎯 Current cafe state - Description:', cafe.description);
+  console.log('🎯 Current cafe state - Contact Number exists:', !!cafe.contactNumber);
+  console.log('🎯 Current cafe state - Description exists:', !!cafe.description);
+  
+  const images = cafe.images && cafe.images.length > 0
+    ? cafe.images
     : [
         'https://placehold.co/600x400/2a2a2a/ffffff?text=Interior',
         'https://placehold.co/600x400/007bff/ffffff?text=Gaming+Setup',
@@ -179,28 +221,44 @@ const CafeDetailScreen = ({ route, navigation }) => {
         <View style={styles.contentContainer}>
           <Text style={styles.name}>{cafe.name}</Text>
           <Text style={styles.address}>{cafe.address}</Text>
-          <Text style={styles.hours}>Hours: {cafe.openingTime} - {cafe.closingTime}</Text>
+          <Text style={styles.hours}>Hours: {cafe.operatingHours?.monday?.open || '10:00'} - {cafe.operatingHours?.monday?.close || '22:00'}</Text>
           
-          {/* Rooms */}
-          <View style={styles.roomsContainer}>
-            <Text style={styles.sectionTitle}>Available Systems</Text>
-            {cafe.rooms.map((room, index) => (
-              <View key={index} style={styles.roomCard}>
-                <Text style={styles.roomType}>{room.roomType}</Text>
-                {room.systems.map((system, sysIndex) => (
-                  <View key={sysIndex} style={styles.systemRow}>
-                    <View>
-                      <Text style={styles.systemType}>
-                        {system.systemType} (Total: {system.count})
-                      </Text>
-                      {system.specs && <Text style={styles.systemSpecs}>{system.specs}</Text>}
-                    </View>
-                    <Text style={styles.systemPrice}>₹{system.pricePerHour}/hour</Text>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
+
+          
+          {cafe.contactNumber && (
+            <Text style={styles.contactNumber}>📞 {cafe.contactNumber}</Text>
+          )}
+          {cafe.description && (
+            <Text style={styles.description}>{cafe.description}</Text>
+          )}
+          
+                     {/* Rooms */}
+           <View style={styles.roomsContainer}>
+             <Text style={styles.sectionTitle}>Available Systems</Text>
+             {cafe.rooms && cafe.rooms.length > 0 ? cafe.rooms.map((room, index) => (
+               <View key={index} style={styles.roomCard}>
+                                   <Text style={styles.roomType}>{room.name}</Text>
+                 
+                 {room.systems && room.systems.length > 0 ? (
+                   <View style={styles.systemsSummary}>
+                     <Text style={styles.systemsSummaryText}>
+                       {room.systems.map((system, sysIndex) => {
+                         const count = room.systems.filter(s => s.type === system.type).length;
+                         return `${system.type} (${count})`;
+                       }).filter((item, index, arr) => arr.indexOf(item) === index).join(', ')}
+                     </Text>
+                     <Text style={styles.roomPrice}>
+                       Starting from ₹{Math.min(...room.systems.map(s => s.pricePerHour))}/hour
+                     </Text>
+                   </View>
+                 ) : (
+                   <Text style={styles.noSystemsText}>No systems available in this room</Text>
+                 )}
+               </View>
+             )) : (
+               <Text style={styles.noRoomsText}>No rooms available</Text>
+             )}
+           </View>
 
           {/* Reviews */}
           <View style={styles.reviewsContainer}>
@@ -323,12 +381,14 @@ const CafeDetailScreen = ({ route, navigation }) => {
                 </View>
               ))}
             </ScrollView>
-          </View>
-        </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
-  );
-};
+                     </View>
+         </SafeAreaView>
+       </Modal>
+       
+       
+     </SafeAreaView>
+   );
+ };
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#fff' },
@@ -339,7 +399,9 @@ const styles = StyleSheet.create({
   contentContainer: { padding: 20 },
   name: { fontSize: 26, fontWeight: 'bold', marginBottom: 5 },
   address: { fontSize: 16, color: '#666', marginBottom: 10 },
-  hours: { fontSize: 14, color: '#666', marginBottom: 20, fontStyle: 'italic' },
+  hours: { fontSize: 14, color: '#666', marginBottom: 15, fontStyle: 'italic' },
+     contactNumber: { fontSize: 16, color: '#007bff', marginBottom: 10, fontWeight: '500' },
+   description: { fontSize: 14, color: '#333', marginBottom: 20, lineHeight: 20, fontStyle: 'italic' },
   roomsContainer: { marginBottom: 20 },
   sectionTitle: { 
     fontSize: 20, 
@@ -349,12 +411,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee', 
     paddingBottom: 5 
   },
-  roomCard: { backgroundColor: '#f9f9f9', borderRadius: 8, padding: 15, marginBottom: 10 },
-  roomType: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
-  systemRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
-  systemType: { fontSize: 16 },
-  systemSpecs: { fontSize: 12, color: '#888', marginTop: 2 },
-  systemPrice: { fontSize: 16, fontWeight: 'bold' },
+     roomCard: { backgroundColor: '#f9f9f9', borderRadius: 8, padding: 15, marginBottom: 10 },
+   roomType: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
+   systemsSummary: { marginTop: 5 },
+   systemsSummaryText: { fontSize: 14, color: '#333', marginBottom: 5 },
+   roomPrice: { fontSize: 12, color: '#007bff', fontWeight: '600' },
   errorText: { color: 'red' },
   footer: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
@@ -381,11 +442,15 @@ const styles = StyleSheet.create({
   characterCount: { fontSize: 12, color: '#666', textAlign: 'right', marginTop: 5 },
   viewAllButton: { backgroundColor: '#f0f0f0', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 8, marginTop: 10, alignItems: 'center' },
   viewAllButtonText: { color: '#007bff', fontSize: 16, fontWeight: '600' },
-  allReviewsContainer: { flex: 1, backgroundColor: '#fff' },
-  allReviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
-  allReviewsTitle: { fontSize: 20, fontWeight: 'bold' },
-  closeButton: { padding: 5 },
-  allReviewsScroll: { flex: 1, padding: 20 },
+     allReviewsContainer: { flex: 1, backgroundColor: '#fff' },
+   allReviewsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
+   allReviewsTitle: { fontSize: 20, fontWeight: 'bold' },
+   closeButton: { padding: 5 },
+   allReviewsScroll: { flex: 1, padding: 20 },
+   noRoomsText: { textAlign: 'center', color: '#666', marginTop: 20, fontStyle: 'italic' },
+   noSystemsText: { textAlign: 'center', color: '#666', marginTop: 10, fontStyle: 'italic' },
+   
+
 });
 
 export default CafeDetailScreen;

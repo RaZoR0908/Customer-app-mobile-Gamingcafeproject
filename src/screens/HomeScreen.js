@@ -39,14 +39,29 @@ const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        console.log('🔍 Starting to fetch cafes...');
+        
         // 1. Fetch ALL cafes first and store them.
         const allCafesResponse = await cafeService.getAllCafes();
+        console.log('📡 Cafes API response:', allCafesResponse);
+        console.log('🏪 Number of cafes received:', allCafesResponse.data?.length || 0);
+        
+        if (!allCafesResponse.data || allCafesResponse.data.length === 0) {
+          setError('No cafes found in the database. Please check if cafes have been created.');
+          setDisplayedCafes([]);
+          setInitialList([]);
+          setListTitle('No Cafes Available');
+          setLoading(false);
+          return;
+        }
+        
         setAllCafes(allCafesResponse.data);
 
         // 2. Now, try to get the user's location.
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
-          setError('Permission to access location was denied.');
+          console.log('📍 Location permission denied, showing all cafes');
+          setError('Permission to access location was denied. Showing all cafes.');
           // If no permission, just show all cafes by default.
           setDisplayedCafes(allCafesResponse.data);
           setInitialList(allCafesResponse.data); // Set initial list to all cafes
@@ -56,23 +71,33 @@ const HomeScreen = ({ navigation }) => {
 
         let location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
+        console.log('📍 User location:', { latitude, longitude });
 
         // 3. Filter the full list to find nearby cafes.
         const nearby = allCafesResponse.data.filter(cafe => {
+          if (!cafe.location || !cafe.location.coordinates) {
+            console.log('⚠️ Cafe missing location data:', cafe.name);
+            return false;
+          }
+          
           const distance = getDistance(
             latitude,
             longitude,
             cafe.location.coordinates[1], // Note: latitude is the second element
             cafe.location.coordinates[0]  // Note: longitude is the first element
           );
+          console.log(`📏 Distance to ${cafe.name}: ${distance.toFixed(2)}km`);
           return distance < 10; // Cafes within 10km
         });
 
+        console.log('🎯 Nearby cafes found:', nearby.length);
         setDisplayedCafes(nearby);
         setInitialList(nearby); // Set initial list to nearby cafes
 
       } catch (err) {
-        setError('Could not load cafe data. Please try again.');
+        console.error('❌ Error loading cafe data:', err);
+        console.error('❌ Error details:', err.response?.data || err.message);
+        setError(`Could not load cafe data: ${err.message}. Please check your internet connection and try again.`);
       } finally {
         setLoading(false);
       }
@@ -125,7 +150,41 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {error && !searchQuery && <Text style={styles.errorText}>{error}</Text>}
+      {error && !searchQuery && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton} 
+            onPress={() => {
+              setLoading(true);
+              setError('');
+              // Reload the data
+              const loadInitialData = async () => {
+                try {
+                  console.log('🔄 Retrying to fetch cafes...');
+                  const allCafesResponse = await cafeService.getAllCafes();
+                  if (allCafesResponse.data && allCafesResponse.data.length > 0) {
+                    setAllCafes(allCafesResponse.data);
+                    setDisplayedCafes(allCafesResponse.data);
+                    setInitialList(allCafesResponse.data);
+                    setListTitle('All Cafes');
+                    setError('');
+                  } else {
+                    setError('Still no cafes found. Please check if cafes have been created.');
+                  }
+                } catch (err) {
+                  setError(`Retry failed: ${err.message}`);
+                } finally {
+                  setLoading(false);
+                }
+              };
+              loadInitialData();
+            }}
+          >
+            <Text style={styles.retryButtonText}>🔄 Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       <FlatList
         data={displayedCafes}
@@ -215,10 +274,28 @@ const styles = StyleSheet.create({
   },
   errorText: { 
     textAlign: 'center', 
-    marginTop: 50, 
+    marginTop: 10, 
     color: '#666', 
     paddingHorizontal: 20,
+    fontSize: 14,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  retryButton: {
+    backgroundColor: '#007bff',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  retryButtonText: {
+    color: 'white',
     fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   searchContainer: {
     flexDirection: 'row',

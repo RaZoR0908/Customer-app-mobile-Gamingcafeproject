@@ -2,9 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 
 const CafeCard = ({ cafe, onPress }) => {
-  const imageUrl = cafe.photos && cafe.photos.length > 0 
-    ? cafe.photos[0] 
+  // Use cafe.images instead of cafe.photos to match the database structure
+  const imageUrl = cafe.images && cafe.images.length > 0 
+    ? cafe.images[0] 
     : 'https://placehold.co/400x200/222/fff?text=Gaming+Cafe';
+    
+  console.log(`🖼️ Cafe ${cafe.name} - Image URL: ${imageUrl}`);
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress}>
@@ -13,7 +16,7 @@ const CafeCard = ({ cafe, onPress }) => {
         <Text style={styles.name}>{cafe.name}</Text>
         <Text style={styles.address}>{cafe.address}</Text>
         <Text style={styles.hours}>
-          {cafe.openingTime} - {cafe.closingTime}
+          {cafe.operatingHours?.monday?.open || '10:00'} - {cafe.operatingHours?.monday?.close || '22:00'}
         </Text>
       </View>
     </TouchableOpacity>

@@ -27,7 +27,6 @@ const BookingScreen = ({ route, navigation }) => {
   const [selectedSystem, setSelectedSystem] = useState(null);
   const [duration, setDuration] = useState(1);
   const [numberOfSystems, setNumberOfSystems] = useState(1);
-  const [customerName, setCustomerName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
 
   // State for availability check
@@ -196,11 +195,6 @@ const BookingScreen = ({ route, navigation }) => {
       return;
     }
     
-    if (!customerName.trim()) {
-      Alert.alert('Missing Information', 'Please enter your name.');
-      return;
-    }
-    
     if (!phoneNumber.trim()) {
       Alert.alert('Missing Information', 'Please enter your phone number.');
       return;
@@ -245,7 +239,6 @@ const BookingScreen = ({ route, navigation }) => {
         }), // Use actual current time instead of hardcoded "12:00 PM"
         duration: duration,
         numberOfSystems: numberOfSystems,
-        customerName: customerName.trim(),
         phoneNumber: phoneNumber.trim(),
         totalPrice: totalPrice
       };
@@ -278,7 +271,7 @@ const BookingScreen = ({ route, navigation }) => {
     return result || '0 hours';
   };
 
-  const isFormComplete = selectedDate && selectedRoom && selectedSystem && customerName.trim() && phoneNumber.trim();
+  const isFormComplete = selectedDate && selectedRoom && selectedSystem && phoneNumber.trim();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -496,20 +489,9 @@ const BookingScreen = ({ route, navigation }) => {
                   <View style={styles.stepIcon}>
                     <Ionicons name="person" size={20} color="#007AFF" />
                   </View>
-                  <Text style={styles.stepTitle}>5. Your Details</Text>
+                  <Text style={styles.stepTitle}>5. Contact Information</Text>
                 </View>
                 
-                <View style={styles.inputContainer}>
-                  <Text style={styles.inputLabel}>Full Name</Text>
-                  <TextInput
-                    style={styles.textInput}
-                    value={customerName}
-                    onChangeText={setCustomerName}
-                    placeholder="Enter your full name"
-                    placeholderTextColor="#999"
-                  />
-                </View>
-
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Phone Number</Text>
                   <TextInput
@@ -580,10 +562,6 @@ const BookingScreen = ({ route, navigation }) => {
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Duration:</Text>
                 <Text style={styles.detailValue}>{formatDuration(duration)}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Name:</Text>
-                <Text style={styles.detailValue}>{customerName}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Phone:</Text>

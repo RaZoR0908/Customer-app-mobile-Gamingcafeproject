@@ -2,7 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Remember to use your computer's local IP address
-const API_URL = 'http://192.168.0.106:5000/api/bookings/';
+const API_URL = 'http:// 192.168.0.106:5000/api/bookings/';
 
 // Helper function to get the user's token
 const getAuthHeader = async () => {

@@ -36,9 +36,18 @@ const BookingCard = ({ booking, cafe }) => {
       <View style={styles.detailRow}>
         <Text style={styles.detailLabel}>Duration:</Text>
         <Text style={styles.detailValue}>{booking.duration} hours</Text>
-
-      
       </View>
+      
+      {/* Display OTP for mobile bookings */}
+      {booking.otp && (
+        <View style={styles.otpContainer}>
+          <Text style={styles.otpLabel}>Verification Code:</Text>
+          <View style={styles.otpBox}>
+            <Text style={styles.otpText}>{booking.otp}</Text>
+          </View>
+          <Text style={styles.otpNote}>Show this code to the cafe staff when you arrive</Text>
+        </View>
+      )}
             {wasUpdated && booking.status === 'Confirmed' && (
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Extended:</Text>
@@ -214,6 +223,41 @@ const styles = StyleSheet.create({
   errorText: {
     color: 'red',
     fontSize: 16,
+  },
+  otpContainer: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#007bff',
+    borderStyle: 'dashed',
+  },
+  otpLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007bff',
+    marginBottom: 8,
+  },
+  otpBox: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  otpText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 4,
+  },
+  otpNote: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    fontStyle: 'italic',
   }
 });
 

@@ -28,6 +28,11 @@ const BookingScreen = ({ route, navigation }) => {
   const [duration, setDuration] = useState(1);
   const [numberOfSystems, setNumberOfSystems] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState('');
+  
+  // State for multi-system booking (friends coming)
+  const [friendsComing, setFriendsComing] = useState(false);
+  const [selectedSystems, setSelectedSystems] = useState([]); // Array of {system, room, quantity}
+  const [friendCount, setFriendCount] = useState(2); // Number of friends + customer (minimum 2 for group booking)
 
   // State for availability check
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
@@ -36,12 +41,34 @@ const BookingScreen = ({ route, navigation }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // --- Clear phone number on mount and when switching booking types ---
+  useEffect(() => {
+    setPhoneNumber('');
+  }, []);
+
+  useEffect(() => {
+    setPhoneNumber('');
+  }, [friendsComing]);
+
   // --- Check System Availability ---
   useEffect(() => {
     if (selectedDate && selectedRoom && selectedSystem) {
       checkSystemAvailability();
     }
   }, [selectedDate, selectedRoom, selectedSystem, duration, numberOfSystems]);
+
+  // --- Check Multi-System Availability ---
+  useEffect(() => {
+    if (friendsComing && selectedDate && selectedSystems.length > 0) {
+      checkMultiSystemAvailability();
+    } else if (friendsComing && selectedDate && selectedSystems.length === 0) {
+      // Reset availability when no systems selected
+      setIsSystemAvailable(false);
+    } else if (friendsComing && selectedDate) {
+      // For multi-system bookings, assume available if we have systems selected
+      setIsSystemAvailable(selectedSystems.length > 0);
+    }
+  }, [selectedDate, selectedSystems, duration, friendsComing]);
 
   // --- Auto-scroll when new content appears ---
   useEffect(() => {
@@ -101,6 +128,38 @@ const BookingScreen = ({ route, navigation }) => {
     }
   };
 
+  // Check availability for multi-system booking
+  const checkMultiSystemAvailability = async () => {
+    setAvailabilityLoading(true);
+    try {
+      let allAvailable = true;
+      for (const systemBooking of selectedSystems) {
+        if (bookingService && typeof bookingService.checkAvailability === 'function') {
+          const roomIdentifier = systemBooking.room._id || systemBooking.room.roomId || systemBooking.room.name;
+          const response = await bookingService.checkAvailability({
+            cafeId: cafe._id,
+            roomType: roomIdentifier,
+            systemType: systemBooking.system.type,
+            date: selectedDate,
+            duration: duration,
+            numberOfSystems: systemBooking.quantity
+          });
+          if (!response.data.available) {
+            allAvailable = false;
+            break;
+          }
+        }
+      }
+      setIsSystemAvailable(allAvailable);
+    } catch (error) {
+      console.log('Multi-system availability check failed:', error);
+      // For multi-system bookings, assume available if check fails
+      setIsSystemAvailable(true);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
+
   // --- Derived State ---
   const availableRooms = useMemo(() => {
     return cafe.rooms || [];
@@ -154,9 +213,15 @@ const BookingScreen = ({ route, navigation }) => {
   }, [selectedRoom]);
 
   const totalPrice = useMemo(() => {
-    if (!selectedSystem) return 0;
-    return selectedSystem.pricePerHour * duration * numberOfSystems;
-  }, [selectedSystem, duration, numberOfSystems]);
+    if (friendsComing && selectedSystems.length > 0) {
+      return selectedSystems.reduce((total, systemBooking) => {
+        return total + (systemBooking.system.pricePerHour * duration * systemBooking.quantity);
+      }, 0);
+    } else if (selectedSystem) {
+      return selectedSystem.pricePerHour * duration;
+    }
+    return 0;
+  }, [selectedSystem, duration, selectedSystems, friendsComing]);
 
   // --- Handlers ---
   const handleDayPress = (day) => {
@@ -189,15 +254,105 @@ const BookingScreen = ({ route, navigation }) => {
     setNumberOfSystems(1); // Reset to 1 when changing systems
   };
 
+  // Multi-system booking handlers
+  const handleAddSystem = (system, room) => {
+    const totalSelected = selectedSystems.reduce((sum, item) => sum + item.quantity, 0);
+    
+    if (totalSelected >= friendCount) {
+      Alert.alert('System Limit Reached', `You can only select exactly ${friendCount} systems for ${friendCount} people.`);
+      return;
+    }
+
+    const existingIndex = selectedSystems.findIndex(
+      item => item.system.type === system.type && item.room._id === room._id
+    );
+    
+    if (existingIndex >= 0) {
+      // Update quantity if system already selected
+      const updatedSystems = [...selectedSystems];
+      updatedSystems[existingIndex].quantity = Math.min(
+        updatedSystems[existingIndex].quantity + 1,
+        system.count,
+        friendCount - (totalSelected - updatedSystems[existingIndex].quantity)
+      );
+      setSelectedSystems(updatedSystems);
+    } else {
+      // Add new system
+      setSelectedSystems([...selectedSystems, {
+        system: system,
+        room: room,
+        quantity: 1
+      }]);
+    }
+  };
+
+  const handleRemoveSystem = (systemType, roomId) => {
+    setSelectedSystems(selectedSystems.filter(
+      item => !(item.system.type === systemType && item.room._id === roomId)
+    ));
+  };
+
+  const handleUpdateSystemQuantity = (systemType, roomId, newQuantity) => {
+    if (newQuantity <= 0) {
+      // Remove the system completely
+      setSelectedSystems(selectedSystems.filter(
+        item => !(item.system.type === systemType && item.room._id === roomId)
+      ));
+      return;
+    }
+
+    const totalSelected = selectedSystems.reduce((sum, item) => sum + item.quantity, 0);
+    const currentItem = selectedSystems.find(item => item.system.type === systemType && item.room._id === roomId);
+    const currentItemQuantity = currentItem ? currentItem.quantity : 0;
+    const newTotal = totalSelected - currentItemQuantity + newQuantity;
+    
+    if (newTotal > friendCount) {
+      Alert.alert('System Limit Reached', `You can only select exactly ${friendCount} systems for ${friendCount} people.`);
+      return;
+    }
+
+    const updatedSystems = selectedSystems.map(item => {
+      if (item.system.type === systemType && item.room._id === roomId) {
+        return { ...item, quantity: Math.min(newQuantity, item.system.count) };
+      }
+      return item;
+    });
+    setSelectedSystems(updatedSystems);
+  };
+
   const handleBookPress = () => {
-    if (!selectedDate || !selectedRoom || !selectedSystem) {
-      Alert.alert('Incomplete Selection', 'Please select a date, room, and system.');
+    // Check basic requirements
+    if (!selectedDate) {
+      Alert.alert('Incomplete Selection', 'Please select a date.');
       return;
     }
     
     if (!phoneNumber.trim()) {
       Alert.alert('Missing Information', 'Please enter your phone number.');
       return;
+    }
+
+    // Check booking type specific requirements
+    if (friendsComing) {
+      if (!selectedRoom) {
+        Alert.alert('Incomplete Selection', 'Please select a room.');
+        return;
+      }
+      if (selectedSystems.length === 0) {
+        Alert.alert('Incomplete Selection', 'Please select at least one system for your group.');
+        return;
+      }
+      // Check exact number of systems for group booking
+      const totalSelectedSystems = selectedSystems.reduce((sum, item) => sum + item.quantity, 0);
+      if (totalSelectedSystems !== friendCount) {
+        Alert.alert('System Selection Required', `You must select exactly ${friendCount} systems for ${friendCount} people.`);
+        return;
+      }
+    } else {
+      if (!selectedRoom || !selectedSystem) {
+        Alert.alert('Incomplete Selection', 'Please select a room and system.');
+        return;
+      }
     }
 
     setModalVisible(true);
@@ -213,38 +368,64 @@ const BookingScreen = ({ route, navigation }) => {
         return;
       }
       
-      // Use roomId if _id is not available, or fallback to room name if neither exists
-      const roomIdentifier = selectedRoom._id || selectedRoom.roomId || selectedRoom.name;
-      if (!selectedRoom || !roomIdentifier) {
-        console.error('❌ Room ID missing:', selectedRoom);
-        Alert.alert('Booking Error', 'Room information is incomplete.');
-        return;
-      }
+      let bookingData;
       
-      if (!selectedSystem) {
-        console.error('❌ System not selected');
-        Alert.alert('Booking Error', 'Please select a system.');
-        return;
+      if (friendsComing && selectedSystems.length > 0) {
+        // Multi-system booking
+        const systemsBooked = selectedSystems.map(systemBooking => ({
+          roomType: systemBooking.room._id || systemBooking.room.roomId || systemBooking.room.name,
+          systemType: systemBooking.system.type,
+          numberOfSystems: systemBooking.quantity,
+          pricePerHour: systemBooking.system.pricePerHour
+        }));
+        
+        bookingData = {
+          cafeId: cafe._id,
+          systemsBooked: systemsBooked,
+          bookingDate: selectedDate,
+          startTime: new Date().toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+          }),
+          duration: duration,
+          phoneNumber: phoneNumber.trim(),
+          totalPrice: totalPrice,
+          friendCount: friendCount
+        };
+      } else {
+        // Single system booking
+        const roomIdentifier = selectedRoom._id || selectedRoom.roomId || selectedRoom.name;
+        if (!selectedRoom || !roomIdentifier) {
+          console.error('❌ Room ID missing:', selectedRoom);
+          Alert.alert('Booking Error', 'Room information is incomplete.');
+          return;
+        }
+        
+        if (!selectedSystem) {
+          console.error('❌ System not selected');
+          Alert.alert('Booking Error', 'Please select a system.');
+          return;
+        }
+        
+        bookingData = {
+          cafeId: cafe._id,
+          roomType: roomIdentifier,
+          systemType: selectedSystem.type,
+          bookingDate: selectedDate,
+          startTime: new Date().toLocaleTimeString('en-US', { 
+            hour: 'numeric', 
+            minute: '2-digit', 
+            hour12: true 
+          }),
+          duration: duration,
+          numberOfSystems: numberOfSystems,
+          phoneNumber: phoneNumber.trim(),
+          totalPrice: totalPrice
+        };
       }
-      
-      const bookingData = {
-        cafeId: cafe._id,
-        roomType: roomIdentifier, // Backend expects roomType, not roomId
-        systemType: selectedSystem.type, // Backend expects systemType, not systemId
-        bookingDate: selectedDate,
-        startTime: new Date().toLocaleTimeString('en-US', { 
-          hour: 'numeric', 
-          minute: '2-digit', 
-          hour12: true 
-        }), // Use actual current time instead of hardcoded "12:00 PM"
-        duration: duration,
-        numberOfSystems: numberOfSystems,
-        phoneNumber: phoneNumber.trim(),
-        totalPrice: totalPrice
-      };
       
       console.log('📋 Booking data being sent:', bookingData);
-      console.log('🎮 Selected system:', selectedSystem);
       
       await bookingService.createBooking(bookingData);
       setModalVisible(false);
@@ -271,7 +452,10 @@ const BookingScreen = ({ route, navigation }) => {
     return result || '0 hours';
   };
 
-  const isFormComplete = selectedDate && selectedRoom && selectedSystem && phoneNumber.trim();
+  const isFormComplete = selectedDate && phoneNumber.trim() && (
+    (friendsComing && selectedSystems.length > 0 && selectedSystems.reduce((sum, item) => sum + item.quantity, 0) === friendCount) || 
+    (!friendsComing && selectedRoom && selectedSystem)
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -297,13 +481,78 @@ const BookingScreen = ({ route, navigation }) => {
 
           <Text style={styles.title}>Book at {cafe.name}</Text>
 
-          {/* Step 1: Date Selection */}
+          {/* Step 1: Booking Type */}
+          <View style={styles.stepCard}>
+            <View style={styles.stepHeader}>
+              <View style={styles.stepIcon}>
+                <Ionicons name="people" size={20} color="#007AFF" />
+              </View>
+              <Text style={styles.stepTitle}>1. Booking Type</Text>
+            </View>
+            
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
+                style={[styles.toggleOption, !friendsComing && styles.toggleOptionSelected]}
+                onPress={() => {
+                  setFriendsComing(false);
+                  setSelectedSystems([]);
+                  setSelectedRoom(null);
+                  setSelectedSystem(null);
+                }}
+              >
+                <Ionicons name="person" size={20} color={!friendsComing ? "#FFFFFF" : "#007AFF"} />
+                <Text style={[styles.toggleText, !friendsComing && styles.toggleTextSelected]}>
+                  Just Me
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.toggleOption, friendsComing && styles.toggleOptionSelected]}
+                onPress={() => {
+                  setFriendsComing(true);
+                  setSelectedRoom(null);
+                  setSelectedSystem(null);
+                }}
+              >
+                <Ionicons name="people" size={20} color={friendsComing ? "#FFFFFF" : "#007AFF"} />
+                <Text style={[styles.toggleText, friendsComing && styles.toggleTextSelected]}>
+                  Friends Coming
+                </Text>
+              </TouchableOpacity>
+            </View>
+            
+            {friendsComing && (
+              <View style={styles.friendCountContainer}>
+                <Text style={styles.friendCountLabel}>How many people total?</Text>
+                <Text style={styles.friendCountSubLabel}>(Minimum 2)</Text>
+                <View style={styles.counterControls}>
+                  <TouchableOpacity 
+                    onPress={() => setFriendCount(Math.max(2, friendCount - 1))} 
+                    style={[styles.counterButton, friendCount <= 2 && styles.counterButtonDisabled]}
+                    disabled={friendCount <= 2}
+                  >
+                    <Ionicons name="remove" size={20} color={friendCount <= 2 ? "#999" : "#007AFF"} />
+                  </TouchableOpacity>
+                  <Text style={styles.counterValue}>{friendCount}</Text>
+                  <TouchableOpacity 
+                    onPress={() => setFriendCount(friendCount + 1)} 
+                    style={styles.counterButton}
+                  >
+                    <Ionicons name="add" size={20} color="#007AFF" />
+                  </TouchableOpacity>
+                </View>
+                <Text style={styles.friendCountHint}>Minimum 2 people required for group booking</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Step 2: Date Selection */}
           <View style={styles.stepCard}>
             <View style={styles.stepHeader}>
               <View style={styles.stepIcon}>
                 <Ionicons name="calendar" size={20} color="#007AFF" />
               </View>
-              <Text style={styles.stepTitle}>1. Select Date</Text>
+              <Text style={styles.stepTitle}>2. Select Date</Text>
             </View>
             <Calendar 
               onDayPress={handleDayPress} 
@@ -330,7 +579,7 @@ const BookingScreen = ({ route, navigation }) => {
                 <View style={styles.stepIcon}>
                   <MaterialIcons name="meeting-room" size={20} color="#007AFF" />
                 </View>
-                <Text style={styles.stepTitle}>2. Select Room</Text>
+                <Text style={styles.stepTitle}>3. Select Room</Text>
               </View>
               <View style={styles.roomsContainer}>
                 {availableRooms.map((room, index) => (
@@ -362,13 +611,144 @@ const BookingScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          {selectedRoom && (
+          {/* Multi-system selection for friends coming */}
+          {friendsComing && selectedDate && selectedRoom && (
             <View style={styles.stepCard}>
               <View style={styles.stepHeader}>
                 <View style={styles.stepIcon}>
                   <MaterialIcons name="games" size={20} color="#007AFF" />
                 </View>
-                <Text style={styles.stepTitle}>3. Select System Type</Text>
+                <Text style={styles.stepTitle}>4. Select Systems</Text>
+              </View>
+              
+              <View style={styles.simpleGroupInfo}>
+                <Text style={styles.simpleGroupText}>
+                  Select exactly {friendCount} systems for your group
+                </Text>
+                <Text style={styles.simpleGroupSubtext}>
+                  {friendCount} people = {friendCount} systems required
+                </Text>
+              </View>
+              
+              {/* Simple System Selection */}
+              <View style={styles.simpleSystemsContainer}>
+                {selectedRoom.systems?.reduce((acc, system) => {
+                  const existing = acc.find(s => s.type === system.type);
+                  if (existing) {
+                    existing.count += 1;
+                  } else {
+                    acc.push({
+                      type: system.type,
+                      count: 1,
+                      pricePerHour: system.pricePerHour,
+                      systemIds: [system.systemId || system._id]
+                    });
+                  }
+                  return acc;
+                }, []).map((system, systemIndex) => {
+                  const isSelected = selectedSystems.some(
+                    item => item.system.type === system.type && item.room._id === selectedRoom._id
+                  );
+                  const selectedItem = selectedSystems.find(
+                    item => item.system.type === system.type && item.room._id === selectedRoom._id
+                  );
+                  const totalSelected = selectedSystems.reduce((sum, item) => sum + item.quantity, 0);
+                  const canAddMore = totalSelected < friendCount && 
+                    (!selectedItem || selectedItem.quantity < system.count);
+                  
+                  return (
+                    <View key={`${selectedRoom._id}_${system.type}_${systemIndex}`} style={styles.simpleSystemCard}>
+                      <View style={styles.simpleSystemInfo}>
+                        <Text style={styles.simpleSystemName}>{system.type}</Text>
+                        <Text style={styles.simpleSystemDetails}>
+                          {system.count} available • ₹{system.pricePerHour}/hour
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.simpleQuantityControls}>
+                        {isSelected ? (
+                          <View style={styles.quantityRow}>
+                            <TouchableOpacity
+                              onPress={() => handleUpdateSystemQuantity(
+                                system.type, 
+                                selectedRoom._id, 
+                                selectedItem.quantity - 1
+                              )}
+                              style={styles.simpleQuantityBtn}
+                            >
+                              <Ionicons name="remove" size={18} color="#007AFF" />
+                            </TouchableOpacity>
+                            
+                            <Text style={styles.simpleQuantityText}>{selectedItem.quantity}</Text>
+                            
+                            <TouchableOpacity
+                              onPress={() => {
+                                if (canAddMore) {
+                                  handleUpdateSystemQuantity(
+                                    system.type, 
+                                    selectedRoom._id, 
+                                    Math.min(system.count, selectedItem.quantity + 1)
+                                  );
+                                } else {
+                                  Alert.alert('Limit Reached', `You can only select up to ${friendCount} systems total`);
+                                }
+                              }}
+                              style={[styles.simpleQuantityBtn, !canAddMore && styles.simpleQuantityBtnDisabled]}
+                              disabled={!canAddMore}
+                            >
+                              <Ionicons name="add" size={18} color={canAddMore ? "#007AFF" : "#999"} />
+                            </TouchableOpacity>
+                          </View>
+                        ) : (
+                          <TouchableOpacity
+                            onPress={() => {
+                              if (canAddMore) {
+                                handleAddSystem(system, selectedRoom);
+                              } else {
+                                Alert.alert('Limit Reached', `You can only select up to ${friendCount} systems total`);
+                              }
+                            }}
+                            style={[styles.addButton, !canAddMore && styles.addButtonDisabled]}
+                            disabled={!canAddMore}
+                          >
+                            <Ionicons name="add" size={18} color={canAddMore ? "#FFFFFF" : "#999"} />
+                            <Text style={[styles.addButtonText, !canAddMore && styles.addButtonTextDisabled]}>
+                              Add
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+              
+              {/* Simple Selected Summary */}
+              {selectedSystems.length > 0 && (
+                <View style={styles.simpleSelectedContainer}>
+                  <Text style={styles.simpleSelectedTitle}>
+                    Selected ({selectedSystems.reduce((sum, item) => sum + item.quantity, 0)}/{friendCount}) 
+                    {selectedSystems.reduce((sum, item) => sum + item.quantity, 0) === friendCount ? ' ✓' : ''}
+                  </Text>
+                  {selectedSystems.map((item, index) => (
+                    <View key={index} style={styles.simpleSelectedItem}>
+                      <Text style={styles.simpleSelectedName}>
+                        {item.system.type} × {item.quantity}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {selectedRoom && !friendsComing && (
+            <View style={styles.stepCard}>
+              <View style={styles.stepHeader}>
+                <View style={styles.stepIcon}>
+                  <MaterialIcons name="games" size={20} color="#007AFF" />
+                </View>
+                <Text style={styles.stepTitle}>5. Select System Type</Text>
               </View>
               <View style={styles.systemsContainer}>
                 {availableSystems.map((system, index) => (
@@ -430,39 +810,18 @@ const BookingScreen = ({ route, navigation }) => {
             </View>
           )}
 
-          {selectedSystem && (
+          {/* Duration & Contact Info - Show for both booking types */}
+          {((friendsComing && selectedSystems.length > 0) || (!friendsComing && selectedSystem)) && (
             <>
-              {/* Step 4: Duration & Quantity */}
+              {/* Step 5: Duration */}
               <View style={styles.stepCard}>
                 <View style={styles.stepHeader}>
                   <View style={styles.stepIcon}>
                     <Ionicons name="time" size={20} color="#007AFF" />
                   </View>
-                  <Text style={styles.stepTitle}>4. Duration & Quantity</Text>
+                  <Text style={styles.stepTitle}>5. Duration</Text>
                 </View>
                 
-                <View style={styles.counterContainer}>
-                  <Text style={styles.counterLabel}>Number of Systems</Text>
-                  <View style={styles.counterControls}>
-                    <TouchableOpacity 
-                      onPress={() => setNumberOfSystems(n => Math.max(1, n - 1))} 
-                      style={styles.counterButton}
-                    >
-                      <Ionicons name="remove" size={20} color="#007AFF" />
-                    </TouchableOpacity>
-                    <Text style={styles.counterValue}>{numberOfSystems}</Text>
-                    <TouchableOpacity 
-                      onPress={() => setNumberOfSystems(n => Math.min(selectedSystem?.count || 1, n + 1))} 
-                      style={styles.counterButton}
-                    >
-                      <Ionicons name="add" size={20} color="#007AFF" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <Text style={styles.counterHint}>
-                  Max: {selectedSystem?.count || 1} systems
-                </Text>
-
                 <View style={styles.counterContainer}>
                   <Text style={styles.counterLabel}>Duration</Text>
                   <View style={styles.counterControls}>
@@ -483,13 +842,13 @@ const BookingScreen = ({ route, navigation }) => {
                 </View>
               </View>
 
-              {/* Step 5: Customer Details */}
+              {/* Step 6: Contact Information */}
               <View style={styles.stepCard}>
                 <View style={styles.stepHeader}>
                   <View style={styles.stepIcon}>
                     <Ionicons name="person" size={20} color="#007AFF" />
                   </View>
-                  <Text style={styles.stepTitle}>5. Contact Information</Text>
+                  <Text style={styles.stepTitle}>6. Contact Information</Text>
                 </View>
                 
                 <View style={styles.inputContainer}>
@@ -507,6 +866,7 @@ const BookingScreen = ({ route, navigation }) => {
               </View>
             </>
           )}
+
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -551,14 +911,46 @@ const BookingScreen = ({ route, navigation }) => {
                 <Text style={styles.detailLabel}>Date:</Text>
                 <Text style={styles.detailValue}>{new Date(selectedDate).toDateString()}</Text>
               </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Room:</Text>
-                <Text style={styles.detailValue}>{selectedRoom?.name}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>System:</Text>
-                <Text style={styles.detailValue}>{selectedSystem?.type} (x{numberOfSystems})</Text>
-              </View>
+              
+              {friendsComing && selectedSystems.length > 0 ? (
+                // Multi-system booking display
+                <>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Group Size:</Text>
+                    <Text style={styles.detailValue}>{friendCount} people</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Room:</Text>
+                    <Text style={styles.detailValue}>{selectedRoom?.name}</Text>
+                  </View>
+                  <View style={styles.systemsListContainer}>
+                    <Text style={styles.systemsListTitle}>Selected Systems:</Text>
+                    {selectedSystems.map((item, index) => (
+                      <View key={index} style={styles.systemListItem}>
+                        <Text style={styles.systemListName}>
+                          {item.system.type} × {item.quantity}
+                        </Text>
+                        <Text style={styles.systemListPrice}>
+                          ₹{item.system.pricePerHour}/hour
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : (
+                // Single system booking display
+                <>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Room:</Text>
+                    <Text style={styles.detailValue}>{selectedRoom?.name}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>System:</Text>
+                    <Text style={styles.detailValue}>{selectedSystem?.type}</Text>
+                  </View>
+                </>
+              )}
+              
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Duration:</Text>
                 <Text style={styles.detailValue}>{formatDuration(duration)}</Text>
@@ -659,7 +1051,8 @@ const styles = StyleSheet.create({
   stepHeader: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 20 
+    marginBottom: 20,
+    flexWrap: 'wrap'
   },
   stepIcon: {
     width: 40,
@@ -671,9 +1064,11 @@ const styles = StyleSheet.create({
     marginRight: 12
   },
   stepTitle: { 
-    fontSize: 18, 
+    fontSize: 16, 
     fontWeight: '600', 
-    color: '#1a1a1a' 
+    color: '#1a1a1a',
+    flex: 1,
+    flexWrap: 'wrap'
   },
 
   // Rooms Selection
@@ -1008,6 +1403,363 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold'
+  },
+
+  // Multi-system booking styles
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16
+  },
+  toggleOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: 'transparent'
+  },
+  toggleOptionSelected: {
+    backgroundColor: '#007AFF'
+  },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginLeft: 8
+  },
+  toggleTextSelected: {
+    color: '#FFFFFF'
+  },
+  friendCountContainer: {
+    marginTop: 16,
+    padding: 20,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0f2ff',
+    alignItems: 'center'
+  },
+  friendCountLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginBottom: 4,
+    textAlign: 'center'
+  },
+  friendCountSubLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: 12,
+    textAlign: 'center'
+  },
+  friendCountHint: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic'
+  },
+  counterButtonDisabled: {
+    backgroundColor: '#f0f0f0',
+    borderColor: '#e0e0e0'
+  },
+  groupLimitContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f8ff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e0f2ff'
+  },
+  groupLimitText: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginLeft: 8,
+    flex: 1
+  },
+  roomSection: {
+    marginBottom: 20
+  },
+  roomSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 12,
+    paddingLeft: 4
+  },
+  systemOptionDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#f5f5f5'
+  },
+  systemNameDisabled: {
+    color: '#999'
+  },
+  selectedSystemInfo: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  selectedQuantity: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginRight: 8,
+    minWidth: 20,
+    textAlign: 'center'
+  },
+  selectedSystemsContainer: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0'
+  },
+  selectedSystemsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 12
+  },
+  selectedSystemItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0'
+  },
+  selectedSystemName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    flex: 1
+  },
+  selectedSystemPrice: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2
+  },
+  quantityControls: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  quantityButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f0f8ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e0f2ff'
+  },
+  quantityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    marginHorizontal: 12,
+    minWidth: 20,
+    textAlign: 'center'
+  },
+  removeButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#fff5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ffe0e0',
+    marginLeft: 8
+  },
+
+  // Simplified system selection styles
+  simpleGroupInfo: {
+    backgroundColor: '#f0f8ff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e0f2ff'
+  },
+  simpleGroupText: {
+    fontSize: 14,
+    color: '#007AFF',
+    textAlign: 'center',
+    fontWeight: '500'
+  },
+  simpleGroupSubtext: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 4,
+    fontStyle: 'italic'
+  },
+  simpleSystemsContainer: {
+    gap: 12
+  },
+  simpleSystemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0'
+  },
+  simpleSystemInfo: {
+    flex: 1
+  },
+  simpleSystemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4
+  },
+  simpleSystemDetails: {
+    fontSize: 14,
+    color: '#666'
+  },
+  simpleQuantityControls: {
+    alignItems: 'center'
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12
+  },
+  simpleQuantityBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f0f8ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e0f2ff'
+  },
+  simpleQuantityBtnDisabled: {
+    backgroundColor: '#f5f5f5',
+    borderColor: '#e0e0e0'
+  },
+  simpleQuantityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#007AFF',
+    minWidth: 20,
+    textAlign: 'center'
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6
+  },
+  addButtonDisabled: {
+    backgroundColor: '#f5f5f5'
+  },
+  addButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600'
+  },
+  addButtonTextDisabled: {
+    color: '#999'
+  },
+  simpleSelectedContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#f0f8ff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0f2ff'
+  },
+  simpleSelectedTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#007AFF',
+    marginBottom: 8,
+    textAlign: 'center'
+  },
+  simpleSelectedItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 6
+  },
+  simpleSelectedName: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: '500'
+  },
+  simpleRemoveBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff5f5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ffe0e0'
+  },
+  quantityDisplay: {
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  quantityText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF'
+  },
+  quantityLabel: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 2
+  },
+
+  // Confirmation modal styles for multi-system display
+  systemsListContainer: {
+    marginTop: 8,
+    padding: 12,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0'
+  },
+  systemsListTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 8
+  },
+  systemListItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0'
+  },
+  systemListName: {
+    fontSize: 14,
+    color: '#1a1a1a',
+    fontWeight: '500'
+  },
+  systemListPrice: {
+    fontSize: 12,
+    color: '#666'
   }
 });
 

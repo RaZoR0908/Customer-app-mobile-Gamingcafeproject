@@ -30,9 +30,8 @@ const MyBookingsScreen = () => {
             ? bookingsData.filter((b) => b && b._id)
             : [];
 
-          const sortedBookings = validBookings.sort(
-            (a, b) => new Date(b.bookingDate) - new Date(a.bookingDate)
-          );
+          // Backend returns data sorted by createdAt (latest first)
+          const sortedBookings = validBookings;
           setBookings(sortedBookings);
 
           // Fetch cafes

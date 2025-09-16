@@ -21,6 +21,20 @@ const BookingScreen = ({ route, navigation }) => {
   const { cafe } = route.params;
   const scrollViewRef = useRef(null);
 
+  // Check if cafe is closed when component mounts
+  useEffect(() => {
+    if (cafe?.isOpen === false) {
+      Alert.alert(
+        'Cafe Closed',
+        `${cafe.name} is temporarily closed and not accepting bookings. You will be redirected back.`,
+        [{ 
+          text: 'OK', 
+          onPress: () => navigation.goBack() 
+        }]
+      );
+    }
+  }, [cafe, navigation]);
+
   // State for direct booking
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedRoom, setSelectedRoom] = useState(null);
@@ -361,6 +375,16 @@ const BookingScreen = ({ route, navigation }) => {
   const handleFinalBooking = async () => {
     setLoading(true);
     try {
+      // Check if cafe is still open before proceeding
+      if (cafe?.isOpen === false) {
+        Alert.alert(
+          'Cafe Closed',
+          `${cafe.name} is temporarily closed and not accepting bookings.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
       // Comprehensive validation
       if (!cafe._id) {
         console.error('❌ Cafe ID missing');

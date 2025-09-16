@@ -404,11 +404,27 @@ const CafeDetailScreen = ({ route, navigation }) => {
       {/* Enhanced Footer */}
       <View style={styles.footer}>
         <TouchableOpacity 
-          style={styles.bookButton} 
-          onPress={() => navigation.navigate('Booking', { cafe })}
+          style={[
+            styles.bookButton, 
+            cafe?.isOpen === false && styles.disabledBookButton
+          ]} 
+          onPress={() => {
+            if (cafe?.isOpen === false) {
+              Alert.alert(
+                'Cafe Closed',
+                `${cafe.name} is temporarily closed and not accepting bookings at the moment. Please try again later.`,
+                [{ text: 'OK' }]
+              );
+              return;
+            }
+            navigation.navigate('Booking', { cafe });
+          }}
+          disabled={cafe?.isOpen === false}
         >
           <Ionicons name="calendar-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-          <Text style={styles.bookButtonText}>Book a Gaming Slot</Text>
+          <Text style={styles.bookButtonText}>
+            {cafe?.isOpen === false ? 'Cafe Temporarily Closed' : 'Book a Gaming Slot'}
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -937,6 +953,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6
+  },
+  disabledBookButton: {
+    backgroundColor: '#cccccc',
+    shadowColor: '#cccccc',
+    shadowOpacity: 0.1,
+    elevation: 2
   },
   bookButtonText: { 
     color: '#fff', 

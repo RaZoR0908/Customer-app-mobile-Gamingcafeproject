@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, SafeAreaView, Alert, RefreshControl } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import cafeService from '../services/cafeService';
 import CafeCard from '../components/CafeCard';
@@ -7,6 +7,7 @@ import * as Location from 'expo-location';
 import { Feather } from '@expo/vector-icons';
 // 1. Import the hook to get the device's safe area dimensions
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Helper function to calculate distance (we'll use this to find nearby cafes)
 const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -32,6 +33,7 @@ const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [listTitle, setListTitle] = useState('Cafes Near You');
+  const [refreshing, setRefreshing] = useState(false);
 
   // 2. Get the safe area insets (padding) for the top and bottom of the screen
   const insets = useSafeAreaInsets();
@@ -41,7 +43,7 @@ const HomeScreen = ({ navigation }) => {
       try {
         console.log('🔍 Starting to fetch cafes...');
         
-        // 1. Fetch ALL cafes first and store them.
+        // 1. Fetch ALL cafes first and show them immediately
         const allCafesResponse = await cafeService.getAllCafes();
         console.log('📡 Cafes API response:', allCafesResponse);
         console.log('🏪 Number of cafes received:', allCafesResponse.data?.length || 0);
@@ -55,56 +57,136 @@ const HomeScreen = ({ navigation }) => {
           return;
         }
         
+        // Show all cafes immediately for fast loading
         setAllCafes(allCafesResponse.data);
-
-        // 2. Now, try to get the user's location.
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          console.log('📍 Location permission denied, showing all cafes');
-          setError('Permission to access location was denied. Showing all cafes.');
-          // If no permission, just show all cafes by default.
-          setDisplayedCafes(allCafesResponse.data);
-          setInitialList(allCafesResponse.data); // Set initial list to all cafes
-          setListTitle('All Cafes');
-          return;
-        }
-
-        let location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
-        console.log('📍 User location:', { latitude, longitude });
-
-        // 3. Filter the full list to find nearby cafes.
-        const nearby = allCafesResponse.data.filter(cafe => {
-          if (!cafe.location || !cafe.location.coordinates) {
-            console.log('⚠️ Cafe missing location data:', cafe.name);
-            return false;
+        setDisplayedCafes(allCafesResponse.data);
+        setInitialList(allCafesResponse.data);
+        setListTitle('All Cafes');
+        setLoading(false); // Stop loading immediately after showing cafes
+        
+        // 2. Now try to get location in background and update to nearby cafes
+        try {
+          let { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            console.log('📍 Location permission denied, keeping all cafes');
+            setError('Permission to access location was denied. Showing all cafes.');
+            return;
           }
-          
-          const distance = getDistance(
-            latitude,
-            longitude,
-            cafe.location.coordinates[1], // Note: latitude is the second element
-            cafe.location.coordinates[0]  // Note: longitude is the first element
-          );
-          console.log(`📏 Distance to ${cafe.name}: ${distance.toFixed(2)}km`);
-          return distance < 10; // Cafes within 10km
-        });
 
-        console.log('🎯 Nearby cafes found:', nearby.length);
-        setDisplayedCafes(nearby);
-        setInitialList(nearby); // Set initial list to nearby cafes
+          let location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced, // Faster than high accuracy
+            maximumAge: 60000, // Use cached location if less than 1 minute old
+            timeout: 10000 // 10 second timeout
+          });
+          const { latitude, longitude } = location.coords;
+          console.log('📍 User location:', { latitude, longitude });
+
+          // Filter to find nearby cafes
+          const nearby = allCafesResponse.data.filter(cafe => {
+            if (!cafe.location || !cafe.location.coordinates) {
+              return false;
+            }
+            
+            const distance = getDistance(
+              latitude,
+              longitude,
+              cafe.location.coordinates[1],
+              cafe.location.coordinates[0]
+            );
+            return distance < 10; // Cafes within 10km
+          });
+
+          console.log('🎯 Nearby cafes found:', nearby.length);
+          
+          if (nearby.length > 0) {
+            // Update to show nearby cafes
+            setDisplayedCafes(nearby);
+            setInitialList(nearby);
+            setListTitle('Cafes Near You');
+            setError(''); // Clear any previous errors
+          } else {
+            setError('No cafes found within 10km. Showing all cafes.');
+            setListTitle('All Cafes (No Nearby Cafes)');
+          }
+        } catch (locationError) {
+          console.error('❌ Error getting location:', locationError);
+          setError('Could not get your location. Showing all cafes.');
+          setListTitle('All Cafes (Location Error)');
+        }
 
       } catch (err) {
         console.error('❌ Error loading cafe data:', err);
         console.error('❌ Error details:', err.response?.data || err.message);
         setError(`Could not load cafe data: ${err.message}. Please check your internet connection and try again.`);
-      } finally {
         setLoading(false);
       }
     };
 
     loadInitialData();
   }, []);
+
+  // Handle refresh by updating displayed cafes when allCafes changes
+  useEffect(() => {
+    if (allCafes.length > 0) {
+      if (searchQuery) {
+        // If searching, apply search filter
+        const newData = allCafes.filter((item) => {
+          const itemData = item.name ? item.name.toUpperCase() : ''.toUpperCase();
+          const textData = searchQuery.toUpperCase();
+          return itemData.indexOf(textData) > -1;
+        });
+        setDisplayedCafes(newData);
+      } else {
+        // If not searching, show initial list (nearby cafes)
+        setDisplayedCafes(initialList);
+      }
+    }
+  }, [allCafes, searchQuery, initialList]);
+
+  // Disabled focus refresh to prevent continuous refreshing
+  // Only manual pull-to-refresh works now
+
+  // Function to refresh cafe data - FIXED to update displayed cafes
+  const handleRefresh = async () => {
+    if (refreshing) {
+      return; // Prevent multiple simultaneous refreshes
+    }
+    
+    setRefreshing(true);
+    try {
+      console.log('🔄 Refreshing cafe data...');
+      
+      // Fetch fresh data
+      const allCafesResponse = await cafeService.getAllCafes();
+      console.log('🔄 Refreshed cafes:', allCafesResponse.data?.length || 0);
+      
+      if (allCafesResponse.data && allCafesResponse.data.length > 0) {
+        setAllCafes(allCafesResponse.data);
+        
+        // Update displayed cafes based on current search state
+        if (searchQuery) {
+          // If searching, apply search filter to new data
+          const newData = allCafesResponse.data.filter((item) => {
+            const itemData = item.name ? item.name.toUpperCase() : ''.toUpperCase();
+            const textData = searchQuery.toUpperCase();
+            return itemData.indexOf(textData) > -1;
+          });
+          setDisplayedCafes(newData);
+          console.log('🔄 Updated search results:', newData.length);
+        } else {
+          // If not searching, show all cafes (or nearby if we had them before)
+          setDisplayedCafes(allCafesResponse.data);
+          setInitialList(allCafesResponse.data);
+          console.log('🔄 Updated displayed cafes:', allCafesResponse.data.length);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error refreshing cafes:', error);
+      setError('Failed to refresh cafe data');
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handleSearch = (query) => {
     setSearchQuery(query);
@@ -123,15 +205,6 @@ const HomeScreen = ({ navigation }) => {
       setListTitle(error ? 'All Cafes' : 'Cafes Near You');
     }
   };
-
-  if (loading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007bff" />
-        <Text style={styles.loadingText}>Finding cafes...</Text>
-      </View>
-    );
-  }
 
   return (
     // 3. Use a regular View as the root, as we will apply padding manually
@@ -191,14 +264,35 @@ const HomeScreen = ({ navigation }) => {
         renderItem={({ item }) => (
           <CafeCard
             cafe={item}
-            onPress={() => navigation.navigate('CafeDetails', { 
-              cafeId: item._id,
-              cafeName: item.name 
-            })}
+            onPress={() => {
+              if (item.isOpen === false) {
+                Alert.alert(
+                  'Cafe Closed',
+                  `${item.name} is temporarily closed and not accepting bookings at the moment. Please try again later.`,
+                  [{ text: 'OK' }]
+                );
+                return;
+              }
+              navigation.navigate('CafeDetails', { 
+                cafeId: item._id,
+                cafeName: item.name 
+              });
+            }}
           />
         )}
         keyExtractor={(item) => item._id}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: insets.bottom + 20 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={['#007bff']}
+            tintColor="#007bff"
+            title={refreshing ? "Refreshing cafe status..." : "Pull to refresh cafe status..."}
+            titleColor="#666"
+            progressBackgroundColor="#ffffff"
+          />
+        }
         ListHeaderComponent={
           <>
             <Text style={styles.listTitle}>{listTitle}</Text>
@@ -213,7 +307,16 @@ const HomeScreen = ({ navigation }) => {
             </View>
           </>
         }
-        ListEmptyComponent={<Text style={styles.errorText}>No cafes found.</Text>}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#007bff" />
+              <Text style={styles.loadingText}>Finding cafes...</Text>
+            </View>
+          ) : (
+            <Text style={styles.errorText}>No cafes found.</Text>
+          )
+        }
       />
     </View>
   );
@@ -230,6 +333,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666'
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
   },
   container: { 
     flex: 1, 

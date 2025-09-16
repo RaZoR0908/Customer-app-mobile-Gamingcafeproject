@@ -61,8 +61,8 @@ const BookingCard = ({ booking, cafe }) => {
     try {
       const startTime = new Date(booking.sessionStartTime);
       const duration = booking.duration || 0;
-      const extendedTime = booking.extendedTime || 0;
-      const totalHours = duration + extendedTime;
+      // Don't add extendedTime to duration since duration already includes extensions
+      const totalHours = duration;
       const endTime = new Date(startTime.getTime() + totalHours * 60 * 60 * 1000);
 
       return endTime.toLocaleTimeString('en-US', {

@@ -12,7 +12,7 @@ import cafeService from '../services/cafeService';
 import { useFocusEffect } from '@react-navigation/native';
 import BookingCard from '../components/BookingCard';
 
-const MyBookingsScreen = () => {
+const MyBookingsScreen = ({ navigation }) => {
   const [bookings, setBookings] = useState([]);
   const [cafes, setCafes] = useState({});
   const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ const MyBookingsScreen = () => {
         try {
           const bookingsData = await bookingService.getMyBookings();
 
-          // Ensure array and no invalid entries
+          // Ensure array and no invalid entries, include pending payment bookings
           const validBookings = Array.isArray(bookingsData)
             ? bookingsData.filter((b) => b && b._id)
             : [];
@@ -69,6 +69,22 @@ const MyBookingsScreen = () => {
     }, [])
   );
 
+  const handlePayExtension = (booking) => {
+    navigation.navigate('Payment', {
+      bookingId: booking._id,
+      amount: booking.extensionPaymentAmount,
+      isExtension: true
+    });
+  };
+
+  const handlePayPending = (booking) => {
+    navigation.navigate('Payment', {
+      bookingId: booking._id,
+      amount: booking.totalPrice,
+      isExtension: false
+    });
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -87,7 +103,12 @@ const MyBookingsScreen = () => {
         <FlatList
           data={bookings}
           renderItem={({ item }) => (
-            <BookingCard booking={item} cafe={cafes[item.cafe]} />
+            <BookingCard 
+              booking={item} 
+              cafe={cafes[item.cafe]} 
+              onPayExtension={handlePayExtension}
+              onPayPending={handlePayPending}
+            />
           )}
           keyExtractor={(item) => item._id}
           contentContainerStyle={styles.listContainer}

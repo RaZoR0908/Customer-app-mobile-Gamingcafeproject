@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-const BookingCard = ({ booking, cafe }) => {
+const BookingCard = ({ booking, cafe, onPayExtension, onPayPending }) => {
   if (!booking) {
     return (
       <View style={styles.card}>
@@ -156,7 +156,26 @@ const BookingCard = ({ booking, cafe }) => {
         </Text>
       </View>
 
-      {/* OTP section */}
+      {/* Pending Payment Section */}
+      {booking.status === 'Pending Payment' && (
+        <View style={styles.pendingPaymentContainer}>
+          <View style={styles.pendingPaymentInfo}>
+            <Feather name="alert-circle" size={16} color="#ff6b35" />
+            <View style={styles.pendingPaymentDetails}>
+              <Text style={styles.pendingPaymentTitle}>Payment Pending</Text>
+              <Text style={styles.pendingPaymentAmount}>₹{booking.totalPrice}</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.payPendingButton}
+            onPress={() => onPayPending && onPayPending(booking)}
+          >
+            <Text style={styles.payPendingButtonText}>Pay Now</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* OTP section - only show for confirmed bookings */}
       {booking.otp && booking.status === 'Booked' && (
         <View style={styles.otpContainer}>
           <Text style={styles.otpLabel}>Verification Code:</Text>
@@ -246,6 +265,8 @@ const BookingCard = ({ booking, cafe }) => {
                   ? '#28a745'
                   : booking.status === 'Cancelled'
                   ? '#dc3545'
+                  : booking.status === 'Pending Payment'
+                  ? '#ff6b35'
                   : '#6c757d',
             },
           ]}
@@ -253,6 +274,32 @@ const BookingCard = ({ booking, cafe }) => {
           {booking.status || 'Unknown'}
         </Text>
       </View>
+
+      {/* Extension Payment Section */}
+      {booking.extensionPaymentStatus === 'pending' && booking.extensionPaymentAmount > 0 && (
+        <View style={styles.extensionPaymentContainer}>
+          <View style={styles.extensionPaymentHeader}>
+            <Feather name="clock" size={18} color="#ff6b35" />
+            <Text style={styles.extensionPaymentTitle}>Extension Payment Required</Text>
+          </View>
+          <View style={styles.extensionPaymentDetails}>
+            <Text style={styles.extensionPaymentDescription}>
+              Your session has been extended by the cafe owner. Please pay the additional amount to continue.
+            </Text>
+            <View style={styles.extensionPaymentAmountContainer}>
+              <Text style={styles.extensionPaymentAmountLabel}>Additional Amount:</Text>
+              <Text style={styles.extensionPaymentAmount}>₹{booking.extensionPaymentAmount}</Text>
+            </View>
+          </View>
+          <TouchableOpacity 
+            style={styles.payExtensionButton}
+            onPress={() => onPayExtension && onPayExtension(booking)}
+          >
+            <Feather name="credit-card" size={16} color="#fff" />
+            <Text style={styles.payExtensionButtonText}>Pay Now</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -389,6 +436,121 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e9ecef',
+  },
+  extensionPaymentContainer: {
+    backgroundColor: '#fff3cd',
+    borderWidth: 1,
+    borderColor: '#ffeaa7',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  extensionPaymentHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  extensionPaymentTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginLeft: 8,
+  },
+  extensionPaymentDetails: {
+    marginBottom: 15,
+  },
+  extensionPaymentDescription: {
+    fontSize: 14,
+    color: '#856404',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  extensionPaymentAmountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ffeaa7',
+  },
+  extensionPaymentAmountLabel: {
+    fontSize: 14,
+    color: '#856404',
+    fontWeight: '500',
+  },
+  extensionPaymentAmount: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ff6b35',
+  },
+  payExtensionButton: {
+    backgroundColor: '#ff6b35',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#ff6b35',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  payExtensionButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  pendingPaymentContainer: {
+    backgroundColor: '#fff3cd',
+    borderWidth: 1,
+    borderColor: '#ffeaa7',
+    borderRadius: 8,
+    padding: 15,
+    marginTop: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pendingPaymentInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  pendingPaymentDetails: {
+    marginLeft: 10,
+    flex: 1,
+  },
+  pendingPaymentTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#856404',
+    marginBottom: 2,
+  },
+  pendingPaymentAmount: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#856404',
+  },
+  payPendingButton: {
+    backgroundColor: '#ff6b35',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  payPendingButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 

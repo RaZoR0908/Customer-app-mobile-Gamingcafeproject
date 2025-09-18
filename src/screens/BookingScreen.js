@@ -451,13 +451,15 @@ const BookingScreen = ({ route, navigation }) => {
       
       console.log('📋 Booking data being sent:', bookingData);
       
-      await bookingService.createBooking(bookingData);
+      const booking = await bookingService.createBooking(bookingData);
       setModalVisible(false);
-      Alert.alert(
-        'Booking Confirmed! 🎮', 
-        'Your gaming session has been booked successfully!', 
-        [{ text: 'OK', onPress: () => navigation.navigate('Home') }]
-      );
+      
+      // Navigate to payment screen instead of showing success alert
+      navigation.navigate('Payment', {
+        bookingId: booking._id,
+        amount: totalPrice,
+        isExtension: false
+      });
     } catch (error) {
       console.log('❌ Booking error:', error);
       const message = error.response?.data?.message || 'Booking failed. Please try again.';

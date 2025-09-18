@@ -7,7 +7,11 @@ import RegisterScreen from '../screens/RegisterScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CafeDetailScreen from '../screens/CafeDetailScreen';
 import BookingScreen from '../screens/BookingScreen';
-import MyBookingsScreen from '../screens/MyBookingsScreen'; // 1. Import the new screen
+import MyBookingsScreen from '../screens/MyBookingsScreen';
+import PaymentScreen from '../screens/PaymentScreen';
+import WalletScreen from '../screens/WalletScreen';
+import WalletTopUpScreen from '../screens/WalletTopUpScreen';
+import RealPayUScreen from '../screens/RealPayUScreen';
 import { useAuth } from '../context/AuthContext';
 import { View, ActivityIndicator } from 'react-native';
 
@@ -45,6 +49,26 @@ const AppStack = () => (
       component={MyBookingsScreen} 
       options={{ title: 'My Bookings' }} 
     />
+    <Stack.Screen 
+      name="Payment" 
+      component={PaymentScreen} 
+      options={{ title: 'Payment' }} 
+    />
+    <Stack.Screen 
+      name="Wallet" 
+      component={WalletScreen} 
+      options={{ title: 'My Wallet' }} 
+    />
+    <Stack.Screen 
+      name="WalletTopUp" 
+      component={WalletTopUpScreen} 
+      options={{ title: 'Add Money to Wallet' }} 
+    />
+        <Stack.Screen
+          name="RealPayU"
+          component={RealPayUScreen}
+          options={{ title: 'PayU Payment Gateway' }}
+        />
   </Stack.Navigator>
 );
 

@@ -218,9 +218,14 @@ const HomeScreen = ({ navigation }) => {
           <Text style={styles.welcomeText}>Welcome,</Text>
           <Text style={styles.userName}>{user?.name}!</Text>
         </View>
-        <TouchableOpacity style={styles.headerIconRight} onPress={logout}>
-          <Feather name="log-out" size={24} color="#333" />
-        </TouchableOpacity>
+        <View style={styles.headerIconsRight}>
+          <TouchableOpacity style={styles.headerIconRight} onPress={() => navigation.navigate('Wallet')}>
+            <Feather name="credit-card" size={24} color="#333" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.headerIconRight} onPress={logout}>
+            <Feather name="log-out" size={24} color="#333" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {error && !searchQuery && (
@@ -358,9 +363,14 @@ const styles = StyleSheet.create({
     width: 40,
     alignItems: 'flex-start',
   },
+  headerIconsRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   headerIconRight: {
     width: 40,
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    marginLeft: 8,
   },
   welcomeContainer: {
     flex: 1,

@@ -1,7 +1,6 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-
-const API_BASE_URL = 'http://192.168.0.102:5000/api';
+import { API_BASE_URL } from '../config/api';
 
 const getAuthHeader = async () => {
   try {

@@ -32,10 +32,18 @@ const getMyBookings = async () => {
   return response.data;
 };
 
+// This function cancels a booking
+const cancelBooking = async (bookingId) => {
+  const config = { headers: await getAuthHeader() };
+  const response = await axios.post(`${API_BASE_URL}/bookings/${bookingId}/cancel`, {}, config);
+  return response.data;
+};
+
 const bookingService = {
   createBooking,
   getSlotAvailability,
   getMyBookings, // Add the new function
+  cancelBooking, // Add the cancel function
 };
 
 export default bookingService;

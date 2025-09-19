@@ -91,6 +91,40 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) 
     }
   };
 
+  // Check if booking can be cancelled
+  const canCancelBooking = () => {
+    if (booking.status !== 'Booked') {
+      return false;
+    }
+
+    const today = new Date();
+    const bookingDate = new Date(booking.bookingDate);
+    const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    // If booking is for today, check if within 15 minutes of booking time
+    if (bookingDateOnly.getTime() === todayOnly.getTime()) {
+      const bookingTime = new Date(booking.bookingDate);
+      const [timeStr, period] = booking.startTime.split(' ');
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      let bookingHour = hours;
+      if (period === 'PM' && hours !== 12) {
+        bookingHour += 12;
+      } else if (period === 'AM' && hours === 12) {
+        bookingHour = 0;
+      }
+      
+      bookingTime.setHours(bookingHour, minutes || 0, 0, 0);
+      const timeDiff = today.getTime() - bookingTime.getTime();
+      const minutesDiff = timeDiff / (1000 * 60);
+      
+      return minutesDiff <= 15;
+    }
+
+    // If booking is for future dates, allow cancellation until that day starts
+    return bookingDateOnly.getTime() > todayOnly.getTime();
+  };
+
   return (
     <View style={styles.card}>
       {/* Cafe name */}
@@ -297,6 +331,19 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) 
           >
             <Feather name="credit-card" size={16} color="#fff" />
             <Text style={styles.payExtensionButtonText}>Pay Now</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Cancel Button Section */}
+      {canCancelBooking() && (
+        <View style={styles.cancelContainer}>
+          <TouchableOpacity 
+            style={styles.cancelButton}
+            onPress={() => onCancel && onCancel(booking)}
+          >
+            <Feather name="x-circle" size={16} color="#fff" />
+            <Text style={styles.cancelButtonText}>Cancel Booking</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -551,6 +598,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  cancelContainer: {
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+  },
+  cancelButton: {
+    backgroundColor: '#dc3545',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#dc3545',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cancelButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });
 

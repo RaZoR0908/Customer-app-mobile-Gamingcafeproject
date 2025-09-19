@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  Alert,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
@@ -147,6 +148,62 @@ const MyBookingsScreen = ({ navigation }) => {
     });
   };
 
+  const handleCancelBooking = async (booking) => {
+    const cafeName = cafes[booking.cafe]?.name || 'Unknown Cafe';
+    
+    Alert.alert(
+      'Cancel Booking',
+      `Are you sure you want to cancel your booking at ${cafeName}?\n\nThis will process a refund if the booking was paid for. This action cannot be undone.`,
+      [
+        {
+          text: 'Keep Booking',
+          style: 'cancel',
+        },
+        {
+          text: 'Cancel Booking',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const response = await bookingService.cancelBooking(booking._id);
+              
+              // Refresh the bookings list
+              const bookingsData = await bookingService.getMyBookings();
+              const validBookings = Array.isArray(bookingsData)
+                ? bookingsData.filter((b) => b && b._id)
+                : [];
+              
+              setAllBookings(validBookings);
+              const todaysBookings = filterBookingsByDate(validBookings, selectedDate);
+              setBookings(todaysBookings);
+              
+              // Update marked dates
+              const marked = createMarkedDates(validBookings, selectedDate);
+              setMarkedDates(marked);
+              
+              setError('');
+              
+              // Show success message with refund info
+              let successMessage = `Booking cancelled successfully!`;
+              if (response.refund) {
+                const refund = response.refund;
+                successMessage += `\n\nRefund Details:\n- Method: ${refund.method}\n- Amount: ₹${refund.amount}\n- Status: ${refund.status}`;
+              }
+              
+              Alert.alert('Success', successMessage);
+            } catch (err) {
+              console.error('Failed to cancel booking:', err);
+              setError('Failed to cancel booking. Please try again.');
+              Alert.alert('Error', 'Failed to cancel booking. Please try again.');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
 
   // Handle date selection from calendar
   const handleDateSelect = (day) => {
@@ -212,6 +269,7 @@ const MyBookingsScreen = ({ navigation }) => {
                 cafe={cafes[item.cafe]} 
                 onPayExtension={handlePayExtension}
                 onPayPending={handlePayPending}
+                onCancel={handleCancelBooking}
               />
             )}
             keyExtractor={(item) => item._id}

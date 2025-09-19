@@ -147,6 +147,7 @@ const MyBookingsScreen = ({ navigation }) => {
     });
   };
 
+
   // Handle date selection from calendar
   const handleDateSelect = (day) => {
     const newSelectedDate = day.dateString;

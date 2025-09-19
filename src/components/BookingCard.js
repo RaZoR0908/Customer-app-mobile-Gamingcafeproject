@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
-const BookingCard = ({ booking, cafe, onPayExtension, onPayPending }) => {
+const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) => {
   if (!booking) {
     return (
       <View style={styles.card}>
@@ -46,7 +46,6 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending }) => {
   };
 
   const bookingDetails = getBookingDetails();
-
 
   // Check if the booking has been updated (e.g., extended) by the owner
   const wasUpdated =
@@ -274,6 +273,7 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending }) => {
           {booking.status || 'Unknown'}
         </Text>
       </View>
+
 
       {/* Extension Payment Section */}
       {booking.extensionPaymentStatus === 'pending' && booking.extensionPaymentAmount > 0 && (

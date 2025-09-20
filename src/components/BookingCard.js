@@ -345,6 +345,20 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) 
             <Feather name="x-circle" size={16} color="#fff" />
             <Text style={styles.cancelButtonText}>Cancel Booking</Text>
           </TouchableOpacity>
+          <Text style={styles.cancelPolicyText}>
+            {(() => {
+              const today = new Date();
+              const bookingDate = new Date(booking.bookingDate);
+              const bookingDateOnly = new Date(bookingDate.getFullYear(), bookingDate.getMonth(), bookingDate.getDate());
+              const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+              
+              if (bookingDateOnly.getTime() === todayOnly.getTime()) {
+                return "Cancel within 15 mins of booking time";
+              } else {
+                return "Cancel until booking day arrives";
+              }
+            })()}
+          </Text>
         </View>
       )}
     </View>
@@ -624,6 +638,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
+  },
+  cancelPolicyText: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
 });
 

@@ -34,6 +34,10 @@ const HomeScreen = ({ navigation }) => {
   const [error, setError] = useState('');
   const [listTitle, setListTitle] = useState('Cafes Near You');
   const [refreshing, setRefreshing] = useState(false);
+  
+  // Store user location to avoid re-fetching on refresh
+  const [userLocation, setUserLocation] = useState(null);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
   // 2. Get the safe area insets (padding) for the top and bottom of the screen
   const insets = useSafeAreaInsets();
@@ -69,17 +73,22 @@ const HomeScreen = ({ navigation }) => {
           let { status } = await Location.requestForegroundPermissionsAsync();
           if (status !== 'granted') {
             console.log('📍 Location permission denied, keeping all cafes');
+            setHasLocationPermission(false);
             setError('Permission to access location was denied. Showing all cafes.');
             return;
           }
 
+          setHasLocationPermission(true);
           let location = await Location.getCurrentPositionAsync({
             accuracy: Location.Accuracy.Balanced, // Faster than high accuracy
-            maximumAge: 60000, // Use cached location if less than 1 minute old
-            timeout: 10000 // 10 second timeout
+            maximumAge: 300000, // Use cached location if less than 5 minutes old
+            timeout: 5000 // Reduced to 5 second timeout for faster response
           });
           const { latitude, longitude } = location.coords;
           console.log('📍 User location:', { latitude, longitude });
+          
+          // Store location for future use
+          setUserLocation({ latitude, longitude });
 
           // Filter to find nearby cafes
           const nearby = allCafesResponse.data.filter(cafe => {
@@ -110,6 +119,7 @@ const HomeScreen = ({ navigation }) => {
           }
         } catch (locationError) {
           console.error('❌ Error getting location:', locationError);
+          setHasLocationPermission(false);
           setError('Could not get your location. Showing all cafes.');
           setListTitle('All Cafes (Location Error)');
         }
@@ -146,7 +156,7 @@ const HomeScreen = ({ navigation }) => {
   // Disabled focus refresh to prevent continuous refreshing
   // Only manual pull-to-refresh works now
 
-  // Function to refresh cafe data - FIXED to update displayed cafes
+  // Function to refresh cafe data - OPTIMIZED for speed
   const handleRefresh = async () => {
     if (refreshing) {
       return; // Prevent multiple simultaneous refreshes
@@ -174,10 +184,43 @@ const HomeScreen = ({ navigation }) => {
           setDisplayedCafes(newData);
           console.log('🔄 Updated search results:', newData.length);
         } else {
-          // If not searching, show all cafes (or nearby if we had them before)
-          setDisplayedCafes(allCafesResponse.data);
-          setInitialList(allCafesResponse.data);
-          console.log('🔄 Updated displayed cafes:', allCafesResponse.data.length);
+          // If not searching, use stored location for faster filtering
+          if (hasLocationPermission && userLocation) {
+            // Use stored location - much faster!
+            const { latitude, longitude } = userLocation;
+            
+            const nearby = allCafesResponse.data.filter(cafe => {
+              if (!cafe.location || !cafe.location.coordinates) {
+                return false;
+              }
+              
+              const distance = getDistance(
+                latitude,
+                longitude,
+                cafe.location.coordinates[1],
+                cafe.location.coordinates[0]
+              );
+              return distance < 10; // Cafes within 10km
+            });
+
+            if (nearby.length > 0) {
+              setDisplayedCafes(nearby);
+              setInitialList(nearby);
+              setListTitle('Cafes Near You');
+              console.log('🔄 Updated nearby cafes (using stored location):', nearby.length);
+            } else {
+              setDisplayedCafes(allCafesResponse.data);
+              setInitialList(allCafesResponse.data);
+              setListTitle('All Cafes (No Nearby Cafes)');
+              console.log('🔄 No nearby cafes, showing all:', allCafesResponse.data.length);
+            }
+          } else {
+            // No stored location or permission, show all cafes
+            setDisplayedCafes(allCafesResponse.data);
+            setInitialList(allCafesResponse.data);
+            setListTitle('All Cafes');
+            console.log('🔄 No location data, showing all cafes:', allCafesResponse.data.length);
+          }
         }
       }
     } catch (error) {

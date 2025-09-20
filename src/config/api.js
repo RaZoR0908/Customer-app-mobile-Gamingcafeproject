@@ -1,6 +1,6 @@
 // API Configuration
 // Change this URL when switching between development and production
-export const API_BASE_URL = "http://192.168.0.100:5000/api";
+export const API_BASE_URL = "http://192.168.0.105:5000/api";
 
 // You can also add environment-specific configurations here
 export const API_CONFIG = {

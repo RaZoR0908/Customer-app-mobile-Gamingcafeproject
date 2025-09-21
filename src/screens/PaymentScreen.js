@@ -10,6 +10,7 @@ import {
   ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import paymentService from '../services/paymentService';
 
 const PaymentScreen = ({ route, navigation }) => {
@@ -17,6 +18,13 @@ const PaymentScreen = ({ route, navigation }) => {
   const [selectedMethod, setSelectedMethod] = useState('');
   const [loading, setLoading] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
+
+  // Hide the navigation header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     // Fetch wallet balance for display purposes only
@@ -133,16 +141,33 @@ const PaymentScreen = ({ route, navigation }) => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isExtension ? 'Pay Extension Fee' : 'Complete Payment'}
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      {/* Beautiful Header with Gradient */}
+      <LinearGradient
+        colors={['#1e293b', '#0f172a']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitlePrefix}>
+              {isExtension ? 'Pay Extension' : 'Complete'}
+            </Text>
+            <Text style={styles.headerTitleMain}>
+              {isExtension ? 'Extension Fee' : 'Payment'}
+            </Text>
+            <View style={styles.headerUnderline} />
+          </View>
+          
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
 
       <ScrollView style={styles.content}>
         <View style={styles.amountContainer}>
@@ -219,55 +244,108 @@ const PaymentScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: '#f8f9fa' 
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f8f9fa'
   },
   header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+    minHeight: 50,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  headerTitlePrefix: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'rgba(255, 255, 255, 0.8)',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  headerTitleMain: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: 1.2,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
+    marginBottom: 6,
+  },
+  headerUnderline: {
+    width: 50,
+    height: 3,
+    backgroundColor: '#ffffff',
+    borderRadius: 2,
+    shadowColor: '#ffffff',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 2,
   },
   content: {
     flex: 1,
-    padding: 20
+    padding: 20,
+    paddingBottom: 100
   },
   amountContainer: {
     backgroundColor: '#fff',
-    padding: 30,
+    padding: 24,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
+    minHeight: 100,
   },
   amountLabel: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 10
+    fontSize: 17,
+    color: '#6b7280',
+    marginBottom: 10,
+    fontWeight: '600',
+    letterSpacing: 0.4
   },
   amountValue: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#333'
+    fontSize: 38,
+    fontWeight: '900',
+    color: '#1e293b',
+    letterSpacing: 1.1,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
   },
   paymentMethodsContainer: {
     backgroundColor: '#fff',
     borderRadius: 12,
-    marginBottom: 20,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -275,24 +353,25 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    padding: 20,
-    paddingBottom: 10
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1e293b',
+    padding: 16,
+    paddingBottom: 8,
+    letterSpacing: 0.4
   },
   paymentMethod: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0'
   },
   selectedMethod: {
     backgroundColor: '#f0f8ff',
     borderLeftWidth: 4,
-    borderLeftColor: '#007bff'
+    borderLeftColor: '#007AFF'
   },
   methodInfo: {
     flexDirection: 'row',
@@ -305,16 +384,18 @@ const styles = StyleSheet.create({
   },
   methodName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 2
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 2,
+    letterSpacing: 0.3
   },
   selectedMethodText: {
-    color: '#007bff'
+    color: '#007AFF'
   },
   methodDescription: {
     fontSize: 14,
-    color: '#666'
+    color: '#6b7280',
+    fontWeight: '500'
   },
   radioButton: {
     width: 20,
@@ -326,47 +407,62 @@ const styles = StyleSheet.create({
     justifyContent: 'center'
   },
   selectedRadioButton: {
-    borderColor: '#007bff'
+    borderColor: '#007AFF'
   },
   radioButtonInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#007bff'
+    backgroundColor: '#007AFF'
   },
   securityInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#e8f5e8',
-    padding: 15,
-    borderRadius: 8
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8
   },
   securityText: {
     marginLeft: 10,
     fontSize: 14,
     color: '#28a745',
-    fontWeight: '500'
+    fontWeight: '600',
+    letterSpacing: 0.2
   },
   footer: {
     padding: 20,
+    paddingBottom: 40,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#eee'
+    borderTopColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8
   },
   payButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center'
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6
   },
   disabledButton: {
-    backgroundColor: '#ccc'
+    backgroundColor: '#ccc',
+    shadowOpacity: 0
   },
   payButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold'
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: 0.4
   }
 });
 

@@ -11,12 +11,20 @@ import {
   ScrollView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import paymentService from '../services/paymentService';
 
 const WalletTopUpScreen = ({ navigation }) => {
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Hide navigation header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const predefinedAmounts = [100, 250, 500, 1000, 2000, 5000];
 
@@ -87,14 +95,28 @@ const WalletTopUpScreen = ({ navigation }) => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Money to Wallet</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={['#1e293b', '#0f172a']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitlePrefix}>Add Money</Text>
+            <Text style={styles.headerTitleMain}>to Wallet</Text>
+            <View style={styles.headerUnderline} />
+          </View>
+          
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
 
       <ScrollView style={styles.content}>
         {/* Amount Selection */}
@@ -151,7 +173,7 @@ const WalletTopUpScreen = ({ navigation }) => {
                 <Ionicons 
                   name={method.icon} 
                   size={24} 
-                  color={selectedMethod === method.id ? '#007bff' : '#333'} 
+                  color={selectedMethod === method.id ? '#007AFF' : '#1e293b'} 
                 />
                 <View style={styles.methodDetails}>
                   <Text style={[
@@ -205,67 +227,123 @@ const WalletTopUpScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f8f9fa'
   },
   header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+    justifyContent: 'center',
+    minHeight: 50,
+    position: 'relative',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 60,
+    flexDirection: 'column',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  headerTitlePrefix: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  headerTitleMain: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: 1.0,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
+  },
+  headerUnderline: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#007AFF',
+    marginTop: 4,
+    borderRadius: 2,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   content: {
     flex: 1,
-    padding: 20
+    padding: 18,
+    paddingBottom: 130
   },
   amountContainer: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
+    padding: 16,
+    borderRadius: 15,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0'
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 15
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 12,
+    letterSpacing: 0.3
   },
   amountInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    marginBottom: 20
+    borderColor: '#007AFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 18,
+    backgroundColor: '#f8f9fa'
   },
   currencySymbol: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginRight: 10
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#007AFF',
+    marginRight: 10,
+    letterSpacing: 0.3
   },
   amountInput: {
     flex: 1,
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    paddingVertical: 15
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1e293b',
+    paddingVertical: 14,
+    letterSpacing: 0.3
   },
   predefinedAmounts: {
     flexDirection: 'row',
@@ -273,47 +351,67 @@ const styles = StyleSheet.create({
     gap: 10
   },
   amountButton: {
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#e0e0e0'
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
   },
   selectedAmountButton: {
-    backgroundColor: '#007bff',
-    borderColor: '#007bff'
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4
   },
   amountButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333'
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1e293b',
+    letterSpacing: 0.3
   },
   selectedAmountButtonText: {
-    color: '#fff'
+    color: '#fff',
+    fontWeight: '800'
   },
   paymentMethodsContainer: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 20,
+    borderRadius: 15,
+    marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    paddingTop: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 8
   },
   paymentMethod: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 0,
+    paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    borderBottomColor: '#e2e8f0',
+    marginBottom: 6
   },
   selectedMethod: {
     backgroundColor: '#f0f8ff',
     borderLeftWidth: 4,
-    borderLeftColor: '#007bff'
+    borderLeftColor: '#007AFF',
+    borderRadius: 8
   },
   methodInfo: {
     flexDirection: 'row',
@@ -321,76 +419,107 @@ const styles = StyleSheet.create({
     flex: 1
   },
   methodDetails: {
-    marginLeft: 15,
+    marginLeft: 16,
     flex: 1
   },
   methodName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 2
+    color: '#1e293b',
+    marginBottom: 3,
+    letterSpacing: 0.1
   },
   selectedMethodText: {
-    color: '#007bff'
+    color: '#007AFF',
+    fontWeight: '700'
   },
   methodDescription: {
-    fontSize: 14,
-    color: '#666'
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500'
   },
   radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 2,
-    borderColor: '#ddd',
+    borderColor: '#e2e8f0',
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa'
   },
   selectedRadioButton: {
-    borderColor: '#007bff'
+    borderColor: '#007AFF',
+    backgroundColor: '#f0f8ff'
   },
   radioButtonInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#007bff'
+    backgroundColor: '#007AFF'
   },
   securityInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#e8f5e8',
-    padding: 15,
-    borderRadius: 8
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
   },
   securityText: {
-    marginLeft: 10,
-    fontSize: 14,
-    color: '#28a745',
-    fontWeight: '500'
+    marginLeft: 12,
+    fontSize: 15,
+    color: '#2e7d32',
+    fontWeight: '700',
+    letterSpacing: 0.3
   },
   footer: {
-    padding: 20,
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 18,
+    paddingBottom: 42,
     backgroundColor: '#fff',
     borderTopWidth: 1,
-    borderTopColor: '#eee'
+    borderTopColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8
   },
   topUpButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007bff',
-    paddingVertical: 15,
-    borderRadius: 8
+    backgroundColor: '#007AFF',
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6
   },
   disabledButton: {
-    backgroundColor: '#ccc'
+    backgroundColor: '#94a3b8',
+    shadowOpacity: 0.1
   },
   topUpButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 8
+    fontWeight: '700',
+    marginLeft: 8,
+    letterSpacing: 0.2
   }
 });
 

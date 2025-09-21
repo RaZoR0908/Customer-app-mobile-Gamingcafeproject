@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
-const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) => {
+const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel, index = 0, isLast = false }) => {
   if (!booking) {
     return (
       <View style={styles.card}>
@@ -126,13 +127,26 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) 
   };
 
   return (
-    <View style={styles.card}>
-      {/* Cafe name */}
-      <Text style={styles.cardCafeName}>
-        {cafe?.name || 'Cafe (No longer available)'}
-      </Text>
+    <View>
+      <View style={styles.card}>
+        {/* Card Number at Top */}
+        <View style={styles.cardNumberContainer}>
+          <Text style={styles.cardNumber}>#{index + 1}</Text>
+        </View>
+        
+        {/* Simple Header with Gradient */}
+        <LinearGradient
+          colors={['#667eea', '#764ba2']}
+          style={styles.cardHeader}
+        >
+          <Text style={styles.cardCafeName}>
+            {cafe?.name?.toUpperCase() || 'CAFE (NO LONGER AVAILABLE)'}
+          </Text>
+        </LinearGradient>
 
-      <View style={styles.detailRow}>
+      {/* Card Content */}
+      <View style={styles.cardContent}>
+        <View style={styles.detailRow}>
         <Text style={styles.detailLabel}>Date:</Text>
         <Text style={styles.detailValue}>
           {booking.bookingDate
@@ -361,6 +375,11 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) 
           </Text>
         </View>
       )}
+      </View>
+      </View>
+      
+      {/* Separator Line - Only show if not the last card */}
+      {!isLast && <View style={styles.separator} />}
     </View>
   );
 };
@@ -368,48 +387,119 @@ const BookingCard = ({ booking, cafe, onPayExtension, onPayPending, onCancel }) 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+    borderRadius: 9,
+    padding: 0,
+    marginBottom: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
+    position: 'relative',
+  },
+  cardNumberContainer: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: '#374151',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    zIndex: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  cardNumber: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.3,
+  },
+  cardHeader: {
+    padding: 9,
+    paddingBottom: 7,
   },
   cardCafeName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    paddingBottom: 10,
+    fontSize: 14,
+    fontWeight: '900',
+    color: '#ffffff',
+    textAlign: 'center',
+    letterSpacing: 0.3,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#374151',
+    marginHorizontal: 20,
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0.5 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  cardContent: {
+    padding: 9,
+    paddingTop: 7,
   },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    alignItems: 'center',
+    marginBottom: 4,
+    paddingVertical: 2,
+    paddingHorizontal: 6,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
   },
   detailLabel: {
-    fontSize: 16,
-    color: '#666',
+    fontSize: 13,
+    color: '#0f172a',
+    fontWeight: '800',
+    letterSpacing: 0.2,
   },
   detailValue: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1e293b',
+    letterSpacing: 0.1,
+    textAlign: 'right',
+    flex: 1,
+    marginLeft: 16,
   },
   statusContainer: {
-    marginTop: 15,
-    paddingTop: 10,
+    marginTop: 8,
+    paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: '#e2e8f0',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 5,
+    marginHorizontal: -1,
   },
   status: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '800',
+    letterSpacing: 0.3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 18,
+    textAlign: 'center',
+    minWidth: 90,
   },
   extendedTag: {
     flexDirection: 'row',
@@ -425,33 +515,48 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   otpContainer: {
-    marginTop: 15,
-    padding: 15,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
+    marginTop: 8,
+    padding: 8,
+    backgroundColor: 'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)',
+    borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#007bff',
+    borderColor: '#007AFF',
     borderStyle: 'dashed',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
   },
   otpLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#007bff',
-    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#007AFF',
+    marginBottom: 5,
+    textAlign: 'center',
+    letterSpacing: 0.1,
   },
   otpBox: {
-    backgroundColor: '#007bff',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 5,
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 5,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 1,
+    elevation: 1,
   },
   otpText: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '800',
     color: '#fff',
-    letterSpacing: 4,
+    letterSpacing: 3,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   otpNote: {
     fontSize: 12,
@@ -478,25 +583,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#e3f2fd',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+    padding: 5,
+    borderRadius: 4,
+    marginBottom: 6,
     borderWidth: 1,
-    borderColor: '#bbdefb',
+    borderColor: '#007AFF',
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
   },
   groupBookingText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#007bff',
-    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '800',
+    color: '#007AFF',
+    marginLeft: 10,
+    letterSpacing: 0.3,
   },
   groupSystemCard: {
-    backgroundColor: '#f8f9fa',
-    padding: 10,
-    borderRadius: 6,
-    marginBottom: 8,
+    backgroundColor: '#f1f5f9',
+    padding: 6,
+    borderRadius: 4,
+    marginBottom: 5,
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.01,
+    shadowRadius: 1,
+    elevation: 1,
   },
   extensionPaymentContainer: {
     backgroundColor: '#fff3cd',
@@ -604,14 +720,20 @@ const styles = StyleSheet.create({
   },
   payPendingButton: {
     backgroundColor: '#ff6b35',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 6,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 25,
+    shadowColor: '#ff6b35',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 4,
   },
   payPendingButtonText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
   cancelContainer: {
     marginTop: 15,
@@ -621,23 +743,24 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: '#dc3545',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 25,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#dc3545',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 5,
   },
   cancelButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '800',
     marginLeft: 8,
+    letterSpacing: 0.3,
   },
   cancelPolicyText: {
     fontSize: 12,

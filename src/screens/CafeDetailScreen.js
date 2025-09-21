@@ -20,6 +20,7 @@ import Swiper from 'react-native-swiper';
 import ImageViewer from 'react-native-image-zoom-viewer';
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width } = Dimensions.get('window');
 
@@ -58,6 +59,13 @@ const InfoBadge = ({ icon, text, color = '#007AFF' }) => (
 
 const CafeDetailScreen = ({ route, navigation }) => {
   const { cafeId } = route.params;
+
+  // Hide the navigation header to avoid duplicate headers
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   const [cafe, setCafe] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -221,7 +229,36 @@ const CafeDetailScreen = ({ route, navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         
-        {/* Enhanced Image Swiper */}
+        {/* Single Clean Header with Gradient */}
+        <LinearGradient
+          colors={['#1e293b', '#0f172a']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>{cafe.name?.toUpperCase()}</Text>
+            </View>
+            
+            <TouchableOpacity 
+              style={styles.shareButton}
+              onPress={() => {
+                // Add share functionality here
+                Alert.alert('Share', 'Share this cafe with friends!');
+              }}
+            >
+              <Ionicons name="share-outline" size={24} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+        
+        {/* Enhanced Image Swiper - Better Height */}
         <View style={styles.imageContainer}>
           <Swiper 
             style={styles.swiper} 
@@ -255,40 +292,51 @@ const CafeDetailScreen = ({ route, navigation }) => {
         {/* Content Container */}
         <View style={styles.contentContainer}>
           
-          {/* Header Section */}
-          <View style={styles.headerSection}>
-            <Text style={styles.cafeName}>{cafe.name}</Text>
-            <View style={styles.ratingContainer}>
-              <StarRating rating={averageRating} readonly={true} size={20} />
-              <Text style={styles.reviewCount}>({reviews.length} reviews)</Text>
+          {/* Address Section */}
+          <View style={styles.infoSection}>
+            <View style={styles.infoItem}>
+              <Ionicons name="location" size={18} color="#34C759" />
+              <Text style={styles.infoText}>{cafe.address}</Text>
             </View>
           </View>
 
-          {/* Info Badges */}
-          <View style={styles.badgesContainer}>
-            <InfoBadge 
-              icon="location-outline" 
-              text={cafe.address} 
-              color="#34C759"
-            />
-            <InfoBadge 
-              icon="time-outline" 
-              text={`${cafe.operatingHours?.monday?.open || '10:00'} - ${cafe.operatingHours?.monday?.close || '22:00'}`}
-              color="#FF9500"
-            />
-            {cafe.contactNumber && (
-              <InfoBadge 
-                icon="call-outline" 
-                text={cafe.contactNumber}
-                color="#007AFF"
-              />
-            )}
+          {/* Timing Section */}
+          <View style={styles.infoSection}>
+            <View style={styles.infoItem}>
+              <Ionicons name="time" size={18} color="#FF9500" />
+              <Text style={styles.infoText}>
+                {cafe.operatingHours?.monday?.open || '10:00'} - {cafe.operatingHours?.monday?.close || '22:00'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Phone Section */}
+          {cafe.contactNumber && (
+            <View style={styles.infoSection}>
+              <View style={styles.infoItem}>
+                <Ionicons name="call" size={18} color="#007AFF" />
+                <Text style={styles.infoText}>{cafe.contactNumber}</Text>
+              </View>
+            </View>
+          )}
+
+          {/* Reviews Section */}
+          <View style={styles.infoSection}>
+            <View style={styles.infoItem}>
+              <Ionicons name="star" size={18} color="#FFD700" />
+              <Text style={styles.infoText}>
+                {averageRating.toFixed(1)}
+              </Text>
+            </View>
           </View>
 
           {/* Description */}
           {cafe.description && (
             <View style={styles.descriptionContainer}>
-              <Text style={styles.descriptionTitle}>About this cafe</Text>
+              <View style={styles.descriptionHeader}>
+                <Ionicons name="information-circle" size={18} color="#3b82f6" />
+                <Text style={styles.descriptionTitle}>About This Cafe</Text>
+              </View>
               <Text style={styles.descriptionText}>{cafe.description}</Text>
             </View>
           )}
@@ -296,8 +344,10 @@ const CafeDetailScreen = ({ route, navigation }) => {
           {/* Systems Section */}
           <View style={styles.systemsContainer}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="games" size={24} color="#007AFF" />
-              <Text style={styles.sectionTitle}>Available Gaming Systems</Text>
+              <View style={styles.sectionTitleContainer}>
+                <MaterialIcons name="meeting-room" size={24} color="#007AFF" />
+                <Text style={styles.sectionTitle}>Available Rooms and Systems</Text>
+              </View>
             </View>
             
             {cafe.rooms && cafe.rooms.length > 0 ? (
@@ -307,16 +357,28 @@ const CafeDetailScreen = ({ route, navigation }) => {
                     <View style={styles.roomIconContainer}>
                       <MaterialIcons name="meeting-room" size={20} color="#007AFF" />
                     </View>
-                    <Text style={styles.roomName}>{room.name}</Text>
+                    <Text style={styles.roomName}>{room.name?.toUpperCase()}</Text>
                   </View>
                   
                   {room.systems && room.systems.length > 0 ? (
                     <View style={styles.systemsInfo}>
                       <Text style={styles.systemsSummary}>
-                        {room.systems.map((system, sysIndex) => {
-                          const count = room.systems.filter(s => s.type === system.type).length;
-                          return `${system.type} (${count})`;
-                        }).filter((item, index, arr) => arr.indexOf(item) === index).join(', ')}
+                        {room.systems
+                          .reduce((acc, system) => {
+                            const existing = acc.find(item => item.type === system.type);
+                            if (existing) {
+                              existing.count++;
+                            } else {
+                              acc.push({ type: system.type, count: 1 });
+                            }
+                            return acc;
+                          }, [])
+                          .map((system, index, arr) => (
+                            <Text key={system.type}>
+                              {system.type} <Text style={styles.systemCount}>({system.count})</Text>
+                              {index < arr.length - 1 ? ', ' : ''}
+                            </Text>
+                          ))}
                       </Text>
                       <View style={styles.priceContainer}>
                         <Text style={styles.priceLabel}>Starting from</Text>
@@ -342,8 +404,10 @@ const CafeDetailScreen = ({ route, navigation }) => {
           {/* Reviews Section */}
           <View style={styles.reviewsContainer}>
             <View style={styles.sectionHeader}>
-              <MaterialIcons name="star" size={24} color="#FFD700" />
-              <Text style={styles.sectionTitle}>Customer Reviews</Text>
+              <View style={styles.sectionTitleContainer}>
+                <MaterialIcons name="star" size={24} color="#FFD700" />
+                <Text style={styles.sectionTitle}>Customer Reviews</Text>
+              </View>
               <TouchableOpacity 
                 style={styles.writeReviewButton}
                 onPress={() => setReviewModalVisible(true)}
@@ -606,9 +670,59 @@ const styles = StyleSheet.create({
     paddingBottom: 140
   },
   
-  // Image Section
+  // Header Section
+  header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 60, // Space for buttons on both sides
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  shareButton: {
+    position: 'absolute',
+    right: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Image Section - Better Height
   imageContainer: { 
-    height: 280,
+    height: 250,
     backgroundColor: '#000'
   },
   swiper: {},
@@ -649,26 +763,33 @@ const styles = StyleSheet.create({
     borderRadius: 4
   },
 
-  // Header Section
-  headerSection: {
-    marginBottom: 20
+  // Info Sections
+  infoSection: {
+    marginBottom: 12,
   },
-  cafeName: { 
-    fontSize: 28, 
-    fontWeight: 'bold', 
-    color: '#1a1a1a',
-    marginBottom: 8,
-    lineHeight: 34
-  },
-  ratingContainer: {
+  infoItem: {
     flexDirection: 'row',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+    marginHorizontal: 4
   },
-  reviewCount: {
-    marginLeft: 8,
+  infoText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500'
+    color: '#1e293b',
+    fontWeight: '500',
+    marginLeft: 10,
+    flex: 1,
+    lineHeight: 18
   },
 
   // Info Badges
@@ -708,24 +829,35 @@ const styles = StyleSheet.create({
   descriptionContainer: {
     backgroundColor: '#fff',
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 24,
+    borderRadius: 10,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
+    borderLeftWidth: 3,
+    borderLeftColor: '#3b82f6',
+    marginHorizontal: 4
+  },
+  descriptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10
   },
   descriptionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8
+    fontWeight: '700',
+    color: '#1e293b',
+    marginLeft: 8,
+    letterSpacing: 0.3
   },
   descriptionText: {
     fontSize: 14,
-    color: '#666',
-    lineHeight: 20
+    color: '#475569',
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: 0.2
   },
 
   // Systems Section
@@ -735,26 +867,42 @@ const styles = StyleSheet.create({
   sectionHeader: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 16,
-    justifyContent: 'space-between'
+    marginBottom: 20,
+    justifyContent: 'space-between',
+    paddingHorizontal: 4,
+    marginLeft: -4
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12
   },
   sectionTitle: { 
     fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#1a1a1a',
-    marginLeft: 8,
-    flex: 1
+    fontWeight: '800', 
+    color: '#1e293b',
+    marginLeft: 4,
+    letterSpacing: 0.5,
+    flexShrink: 1
   },
   writeReviewButton: {
     backgroundColor: '#007AFF',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20
+    borderRadius: 18,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    flexShrink: 0
   },
   writeReviewButtonText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '600'
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.2
   },
 
   // Room Cards
@@ -785,8 +933,9 @@ const styles = StyleSheet.create({
   },
   roomName: { 
     fontSize: 18, 
-    fontWeight: '600',
-    color: '#1a1a1a'
+    fontWeight: '700',
+    color: '#1e293b',
+    letterSpacing: 0.5
   },
   systemsInfo: {
     flexDirection: 'row',
@@ -794,10 +943,16 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   systemsSummary: { 
-    fontSize: 14, 
-    color: '#666',
+    fontSize: 16, 
+    color: '#1e293b',
+    fontWeight: '700',
     flex: 1,
-    marginRight: 16
+    marginRight: 16,
+    letterSpacing: 0.3
+  },
+  systemCount: {
+    color: '#007AFF',
+    fontWeight: '800'
   },
   priceContainer: {
     alignItems: 'flex-end'

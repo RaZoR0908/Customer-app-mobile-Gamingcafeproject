@@ -14,12 +14,20 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Calendar } from 'react-native-calendars';
+import { LinearGradient } from 'expo-linear-gradient';
 import paymentService from '../services/paymentService';
 
 const WalletScreen = ({ navigation }) => {
   const [walletData, setWalletData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Hide navigation header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
   const [sortOrder, setSortOrder] = useState('newest'); // 'newest', 'oldest', 'amount_high', 'amount_low'
   const [showCalendar, setShowCalendar] = useState(false);
   const [showSortModal, setShowSortModal] = useState(false);
@@ -174,24 +182,59 @@ const WalletScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={['#1e293b', '#0f172a']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitlePrefix}>My</Text>
+              <Text style={styles.headerTitleMain}>Wallet</Text>
+              <View style={styles.headerUnderline} />
+            </View>
+            
+            <View style={{ width: 40 }} />
+          </View>
+        </LinearGradient>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007bff" />
-          <Text style={styles.loadingText}>Loading wallet...</Text>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading your wallet...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Wallet</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={['#1e293b', '#0f172a']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitlePrefix}>My</Text>
+            <Text style={styles.headerTitleMain}>Wallet</Text>
+            <View style={styles.headerUnderline} />
+          </View>
+          
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
 
       <ScrollView
         style={styles.content}
@@ -202,13 +245,15 @@ const WalletScreen = ({ navigation }) => {
       >
         {/* Balance Card */}
         <View style={styles.balanceCard}>
-        <View style={styles.balanceHeader}>
-          <Ionicons name="card" size={24} color="#007bff" />
-          <Text style={styles.balanceLabel}>Wallet Balance</Text>
-        </View>
-          <Text style={styles.balanceAmount}>₹{walletData?.balance || 0}</Text>
+          <View style={styles.balanceContent}>
+            <View style={styles.balanceHeader}>
+              <Ionicons name="card" size={20} color="rgba(255, 255, 255, 0.8)" />
+              <Text style={styles.balanceLabel}>Wallet Balance</Text>
+            </View>
+            <Text style={styles.balanceAmount}>₹{walletData?.balance || 0}</Text>
+          </View>
           <TouchableOpacity style={styles.topUpButton} onPress={handleTopUp}>
-            <Ionicons name="add" size={20} color="#fff" />
+            <Ionicons name="add" size={18} color="#fff" />
             <Text style={styles.topUpButtonText}>Add Money</Text>
           </TouchableOpacity>
         </View>
@@ -216,12 +261,18 @@ const WalletScreen = ({ navigation }) => {
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('MyBookings')}>
-            <Ionicons name="list" size={24} color="#007bff" />
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="list" size={26} color="#007AFF" />
+            </View>
             <Text style={styles.actionText}>My Bookings</Text>
+            <View style={styles.actionAccent} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('Home')}>
-            <Ionicons name="home" size={24} color="#28a745" />
+            <View style={styles.actionIconContainer}>
+              <Ionicons name="home" size={26} color="#10B981" />
+            </View>
             <Text style={styles.actionText}>Home</Text>
+            <View style={[styles.actionAccent, { backgroundColor: '#10B981' }]} />
           </TouchableOpacity>
         </View>
 
@@ -229,26 +280,20 @@ const WalletScreen = ({ navigation }) => {
         <View style={styles.transactionsContainer}>
           <View style={styles.transactionHeader}>
             <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <View style={styles.headerActions}>
-              <TouchableOpacity 
-                style={styles.filterButton} 
-                onPress={() => setShowCalendar(true)}
-              >
-                <Ionicons name="calendar" size={20} color="#007bff" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.sortButton} 
-                onPress={() => setShowSortModal(true)}
-              >
-                <Ionicons name="swap-vertical" size={20} color="#007bff" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.showAllButton} 
-                onPress={clearDateFilter}
-              >
-                <Ionicons name="list" size={20} color="#007bff" />
-              </TouchableOpacity>
-            </View>
+             <View style={styles.headerActions}>
+               <TouchableOpacity 
+                 style={styles.filterButton} 
+                 onPress={() => setShowCalendar(true)}
+               >
+                 <Ionicons name="calendar" size={20} color="#007AFF" />
+               </TouchableOpacity>
+               <TouchableOpacity 
+                 style={styles.sortButton} 
+                 onPress={() => setShowSortModal(true)}
+               >
+                 <Ionicons name="swap-vertical" size={20} color="#007AFF" />
+               </TouchableOpacity>
+             </View>
           </View>
 
           {/* Filter Status */}
@@ -441,24 +486,73 @@ const WalletScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f8f9fa'
   },
   header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+    justifyContent: 'center',
+    minHeight: 50,
+    position: 'relative',
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 60,
+    flexDirection: 'column',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  headerTitlePrefix: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  headerTitleMain: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: 1.0,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
+  },
+  headerUnderline: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#007AFF',
+    marginTop: 4,
+    borderRadius: 2,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   content: {
     flex: 1,
@@ -470,176 +564,245 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa'
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
-    marginTop: 10
+    color: '#1e293b',
+    marginTop: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3
   },
   balanceCard: {
-    backgroundColor: '#007bff',
-    padding: 25,
-    borderRadius: 15,
+    backgroundColor: '#007AFF',
+    padding: 20,
+    borderRadius: 16,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)'
+  },
+  balanceContent: {
+    marginBottom: 16
   },
   balanceHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 12
   },
   balanceLabel: {
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginLeft: 10
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    marginLeft: 8
   },
   balanceAmount: {
-    fontSize: 36,
-    fontWeight: 'bold',
+    fontSize: 40,
+    fontWeight: '900',
     color: '#fff',
-    marginBottom: 20
+    letterSpacing: 1.0,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4
   },
   topUpButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 25,
-    alignSelf: 'flex-start'
+    alignSelf: 'flex-start',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: 0
   },
   topUpButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8
+    fontWeight: '700',
+    marginLeft: 8,
+    letterSpacing: 0.3
   },
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 20
+    marginBottom: 24
   },
   actionButton: {
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 18,
     flex: 0.45,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    position: 'relative',
+    overflow: 'hidden'
+  },
+  actionText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginTop: 12,
+    letterSpacing: 0.4,
+    textAlign: 'center'
+  },
+  actionIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3
   },
-  actionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginTop: 8
+  actionAccent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 4,
+    backgroundColor: '#007AFF',
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18
   },
   transactionsContainer: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#f0f0f0'
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginBottom: 18,
+    letterSpacing: 0.5,
+    lineHeight: 24
   },
   transactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    borderBottomColor: '#e2e8f0',
+    marginBottom: 8
   },
   transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 15
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
   },
   transactionDetails: {
     flex: 1
   },
   transactionDescription: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 2
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 4,
+    letterSpacing: 0.2
   },
   transactionDate: {
-    fontSize: 12,
-    color: '#666'
+    fontSize: 13,
+    color: '#64748b',
+    fontWeight: '500'
   },
   transactionAmount: {
     alignItems: 'flex-end'
   },
   amountText: {
-    fontSize: 16,
-    fontWeight: 'bold'
+    fontSize: 17,
+    fontWeight: '800',
+    letterSpacing: 0.3
   },
   emptyState: {
     alignItems: 'center',
-    paddingVertical: 40
+    paddingVertical: 48
   },
   emptyStateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666',
-    marginTop: 10
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginTop: 16,
+    letterSpacing: 0.3
   },
   emptyStateSubText: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 5,
-    textAlign: 'center'
+    fontSize: 15,
+    color: '#64748b',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+    letterSpacing: 0.2
   },
   transactionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15
+    marginBottom: 15,
+    minHeight: 24,
+    paddingTop: 2
   },
   headerActions: {
     flexDirection: 'row',
-    gap: 10
+    gap: 8,
+    alignItems: 'center'
   },
   filterButton: {
-    padding: 8,
+    padding: 6,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f1f5f9',
     borderWidth: 1,
-    borderColor: '#e9ecef'
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 34,
+    height: 34
   },
   sortButton: {
-    padding: 8,
+    padding: 6,
     borderRadius: 8,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f1f5f9',
     borderWidth: 1,
-    borderColor: '#e9ecef'
-  },
-  showAllButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#f8f9fa',
-    borderWidth: 1,
-    borderColor: '#e9ecef'
+    borderColor: '#e2e8f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 34,
+    height: 34
   },
   filterStatus: {
     flexDirection: 'row',
@@ -676,22 +839,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 15,
-    backgroundColor: '#007bff',
-    borderRadius: 8,
-    marginTop: 15,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3
+    padding: 16,
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    marginTop: 18,
+    marginBottom: 24,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6
   },
   showMoreText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#fff',
-    fontWeight: '600',
-    marginRight: 5
+    fontWeight: '700',
+    marginRight: 8,
+    letterSpacing: 0.3
   },
   modalOverlay: {
     flex: 1,

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import paymentService from '../services/paymentService';
 import { getPaymentConfig } from '../config/paymentConfig';
 
@@ -20,6 +21,13 @@ const RealPayUScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(false);
   const [paymentData, setPaymentData] = useState(passedPaymentData || null);
   const [showWebView, setShowWebView] = useState(false);
+
+  // Hide the navigation header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     if (passedPaymentData) {
@@ -130,27 +138,33 @@ const RealPayUScreen = ({ route, navigation }) => {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    // This will be called when user returns from PayU
-    navigation.reset({
-      index: 0,
-      routes: [
-        { name: 'Home' },
-        { name: 'MyBookings' }
-      ]
-    });
-  };
-
-  const handlePaymentFailure = () => {
-    Alert.alert('Payment Failed', 'Payment was not successful. Please try again.');
-    navigation.goBack();
-  };
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={['#1e293b', '#0f172a']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitlePrefix}>PayU</Text>
+              <Text style={styles.headerTitleMain}>Payment</Text>
+              <View style={styles.headerUnderline} />
+            </View>
+            
+            <View style={{ width: 40 }} />
+          </View>
+        </LinearGradient>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007bff" />
+          <ActivityIndicator size="large" color="#007AFF" />
           <Text style={styles.loadingText}>Creating payment order...</Text>
         </View>
       </SafeAreaView>
@@ -159,14 +173,28 @@ const RealPayUScreen = ({ route, navigation }) => {
 
   if (showWebView && paymentData) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => setShowWebView(false)}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>PayU Payment</Text>
-          <View style={{ width: 24 }} />
-        </View>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={['#1e293b', '#0f172a']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => setShowWebView(false)}
+            >
+              <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitlePrefix}>PayU</Text>
+              <Text style={styles.headerTitleMain}>Payment</Text>
+              <View style={styles.headerUnderline} />
+            </View>
+            
+            <View style={{ width: 40 }} />
+          </View>
+        </LinearGradient>
         
         <WebView
           source={{
@@ -184,16 +212,36 @@ const RealPayUScreen = ({ route, navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>PayU Payment</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={['#1e293b', '#0f172a']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitlePrefix}>PayU</Text>
+            <Text style={styles.headerTitleMain}>Payment</Text>
+            <View style={styles.headerUnderline} />
+          </View>
+          
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
 
-      <ScrollView style={styles.content}>
+      <ScrollView 
+        style={styles.content} 
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        overScrollMode="never"
+        scrollEventThrottle={16}
+      >
         {/* Testing Notice */}
         {getPaymentConfig().showTestingNotice && (
           <View style={styles.testingNotice}>
@@ -212,10 +260,6 @@ const RealPayUScreen = ({ route, navigation }) => {
           </View>
           
           <View style={styles.paymentInfo}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Amount:</Text>
-              <Text style={styles.infoValue}>₹{amount}</Text>
-            </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Payment Type:</Text>
               <Text style={styles.infoValue}>
@@ -267,61 +311,114 @@ const RealPayUScreen = ({ route, navigation }) => {
           </Text>
         </View>
 
-        {/* Payment Button */}
+        {/* OTP Testing */}
+        <View style={styles.otpCard}>
+          <View style={styles.otpHeader}>
+            <Ionicons name="shield-checkmark" size={20} color="#ff6b35" />
+            <Text style={styles.otpTitle}>OTP Testing</Text>
+          </View>
+          <Text style={styles.otpText}>
+            For OTP verification on PayU portal, use:
+            {'\n'}• Correct OTP: 123456
+          </Text>
+        </View>
+
+
+      </ScrollView>
+
+      {/* Fixed Footer */}
+      <View style={styles.footer}>
         <TouchableOpacity style={styles.payButton} onPress={handlePayment}>
           <Ionicons name="card" size={20} color="#fff" />
           <Text style={styles.payButtonText}>Proceed to PayU Payment</Text>
         </TouchableOpacity>
-
-        {/* Action Buttons */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={styles.successButton} 
-            onPress={handlePaymentSuccess}
-          >
-            <Ionicons name="checkmark-circle" size={20} color="#28a745" />
-            <Text style={styles.successButtonText}>Payment Success</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.failureButton} 
-            onPress={handlePaymentFailure}
-          >
-            <Ionicons name="close-circle" size={20} color="#dc3545" />
-            <Text style={styles.failureButtonText}>Payment Failed</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f8f9fa'
+  },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5'
+    backgroundColor: '#f8f9fa'
   },
   webview: {
     flex: 1
   },
   header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
+    justifyContent: 'center',
+    minHeight: 50,
+    position: 'relative',
   },
-  headerTitle: {
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 60,
+    flexDirection: 'column',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  headerTitlePrefix: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  headerTitleMain: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: 1.2,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  headerUnderline: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#007AFF',
+    marginTop: 4,
+    borderRadius: 2,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
   },
   content: {
     flex: 1,
-    padding: 20
+    padding: 16,
+    paddingBottom: 80
   },
   loadingContainer: {
     flex: 1,
@@ -330,49 +427,60 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#666',
-    marginTop: 10
+    color: '#1e293b',
+    marginTop: 10,
+    fontWeight: '600',
+    letterSpacing: 0.3
   },
   testingNotice: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff3cd',
-    padding: 15,
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 20,
+    marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#ff6b35'
+    borderLeftColor: '#ff6b35',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2
   },
   testingText: {
     fontSize: 14,
     color: '#856404',
     marginLeft: 10,
-    fontWeight: '500'
+    fontWeight: '600',
+    letterSpacing: 0.2
   },
   paymentCard: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF'
   },
   paymentHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15
+    marginBottom: 12
   },
   paymentTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 10
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1e293b',
+    marginLeft: 10,
+    letterSpacing: 0.3
   },
   paymentInfo: {
-    gap: 10
+    gap: 8
   },
   infoRow: {
     flexDirection: 'row',
@@ -380,145 +488,162 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   infoLabel: {
-    fontSize: 16,
-    color: '#666'
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500'
   },
   infoValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333'
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e293b',
+    letterSpacing: 0.2
   },
   testCardsCard: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: '#28a745'
   },
   testCardsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15
+    marginBottom: 12
   },
   testCardsTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#28a745',
-    marginLeft: 10
+    marginLeft: 10,
+    letterSpacing: 0.3
   },
   testCardsList: {
-    gap: 10
+    gap: 8
   },
   testCardItem: {
     padding: 10,
     backgroundColor: '#f8f9fa',
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#28a745'
+    borderLeftColor: '#28a745',
+    marginBottom: 6
   },
   testCardNumber: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-    fontFamily: 'monospace'
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1e293b',
+    fontFamily: 'monospace',
+    letterSpacing: 0.5
   },
   testCardInfo: {
     fontSize: 12,
-    color: '#666',
-    marginTop: 2
+    color: '#6b7280',
+    marginTop: 3,
+    fontWeight: '500'
   },
   upiCard: {
     backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 20,
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3
+    elevation: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: '#6f42c1'
   },
   upiHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 8
   },
   upiTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#6f42c1',
-    marginLeft: 10
+    marginLeft: 10,
+    letterSpacing: 0.3
   },
   upiText: {
     fontSize: 14,
-    color: '#666',
-    lineHeight: 20
+    color: '#6b7280',
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: 0.2
+  },
+  otpCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    borderLeftWidth: 3,
+    borderLeftColor: '#ff6b35'
+  },
+  otpHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  otpTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ff6b35',
+    marginLeft: 10,
+    letterSpacing: 0.3
+  },
+  otpText: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+    fontWeight: '500',
+    letterSpacing: 0.2
+  },
+  footer: {
+    padding: 20,
+    paddingBottom: 50,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8
   },
   payButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#007bff',
-    paddingVertical: 15,
+    backgroundColor: '#007AFF',
+    paddingVertical: 16,
     paddingHorizontal: 30,
-    borderRadius: 8,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3
+    borderRadius: 12,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6
   },
   payButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold',
-    marginLeft: 10
+    fontWeight: '800',
+    marginLeft: 10,
+    letterSpacing: 0.4
   },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 10
-  },
-  successButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#d4edda',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#c3e6cb'
-  },
-  successButtonText: {
-    color: '#28a745',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8
-  },
-  failureButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f8d7da',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#f5c6cb'
-  },
-  failureButtonText: {
-    color: '#dc3545',
-    fontSize: 14,
-    fontWeight: '600',
-    marginLeft: 8
-  }
 });
 
 export default RealPayUScreen;

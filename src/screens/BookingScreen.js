@@ -16,10 +16,18 @@ import {
 import { Calendar } from 'react-native-calendars';
 import bookingService from '../services/bookingService';
 import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const BookingScreen = ({ route, navigation }) => {
   const { cafe } = route.params;
   const scrollViewRef = useRef(null);
+
+  // Hide the navigation header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
 
   // Check if cafe is closed when component mounts
   useEffect(() => {
@@ -478,7 +486,10 @@ const BookingScreen = ({ route, navigation }) => {
     return result || '0 hours';
   };
 
-  const isFormComplete = selectedDate && phoneNumber.trim() && (
+  // Check if phone number is valid (exactly 10 digits)
+  const isPhoneValid = phoneNumber.trim().length === 10 && /^\d{10}$/.test(phoneNumber.trim());
+
+  const isFormComplete = selectedDate && isPhoneValid && (
     (friendsComing && selectedSystems.length > 0 && selectedSystems.reduce((sum, item) => sum + item.quantity, 0) === friendCount) || 
     (!friendsComing && selectedRoom && selectedSystem)
   );
@@ -496,16 +507,35 @@ const BookingScreen = ({ route, navigation }) => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          bounces={false}
+          overScrollMode="never"
+          scrollEventThrottle={16}
         >
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#007AFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Book Gaming Session</Text>
-            <View style={{ width: 24 }} />
-          </View>
+          {/* Beautiful Header with Gradient */}
+          <LinearGradient
+            colors={['#1e293b', '#0f172a']}
+            style={styles.header}
+          >
+            <View style={styles.headerContent}>
+              <TouchableOpacity 
+                style={styles.backButton} 
+                onPress={() => navigation.goBack()}
+              >
+                <Ionicons name="arrow-back" size={24} color="#ffffff" />
+              </TouchableOpacity>
+              
+              <View style={styles.headerTitleContainer}>
+                <Text style={styles.headerTitle}>Book Gaming Session</Text>
+              </View>
+              
+              <View style={{ width: 40 }} />
+            </View>
+          </LinearGradient>
 
-          <Text style={styles.title}>Book at {cafe.name}</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.titleCafeName}>{cafe.name?.toUpperCase()}</Text>
+            <View style={styles.titleUnderline} />
+          </View>
 
           {/* Step 1: Booking Type */}
           <View style={styles.stepCard}>
@@ -880,14 +910,27 @@ const BookingScreen = ({ route, navigation }) => {
                 <View style={styles.inputContainer}>
                   <Text style={styles.inputLabel}>Phone Number</Text>
                   <TextInput
-                    style={styles.textInput}
+                    style={[
+                      styles.textInput,
+                      phoneNumber.length > 0 && !isPhoneValid && styles.textInputError
+                    ]}
                     value={phoneNumber}
                     onChangeText={setPhoneNumber}
-                    placeholder="Enter your phone number"
+                    placeholder="Enter your 10-digit phone number"
                     placeholderTextColor="#999"
                     keyboardType="phone-pad"
                     maxLength={10}
                   />
+                  {phoneNumber.length > 0 && !isPhoneValid && (
+                    <Text style={styles.errorText}>
+                      Please enter a valid 10-digit phone number
+                    </Text>
+                  )}
+                  {isPhoneValid && (
+                    <Text style={styles.successText}>
+                      ✓ Valid phone number
+                    </Text>
+                  )}
                 </View>
               </View>
             </>
@@ -931,7 +974,7 @@ const BookingScreen = ({ route, navigation }) => {
             <View style={styles.bookingDetails}>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Cafe:</Text>
-                <Text style={styles.detailValue}>{cafe.name}</Text>
+                <Text style={styles.detailValue}>{cafe.name?.toUpperCase()}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Date:</Text>
@@ -947,7 +990,7 @@ const BookingScreen = ({ route, navigation }) => {
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Room:</Text>
-                    <Text style={styles.detailValue}>{selectedRoom?.name}</Text>
+                    <Text style={styles.detailValue}>{selectedRoom?.name?.toUpperCase()}</Text>
                   </View>
                   <View style={styles.systemsListContainer}>
                     <Text style={styles.systemsListTitle}>Selected Systems:</Text>
@@ -968,7 +1011,7 @@ const BookingScreen = ({ route, navigation }) => {
                 <>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Room:</Text>
-                    <Text style={styles.detailValue}>{selectedRoom?.name}</Text>
+                    <Text style={styles.detailValue}>{selectedRoom?.name?.toUpperCase()}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>System:</Text>
@@ -1027,88 +1070,134 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: { 
-    flex: 1 
+    flex: 1,
+    backgroundColor: '#f8f9fa'
   },
   scrollContent: {
-    paddingBottom: 300, // Increased padding to prevent content from being hidden behind footer and keyboard
+    paddingBottom: 100, // Minimal padding to prevent content from being hidden behind footer
   },
   
   // Header
   header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0'
+    minHeight: 50,
   },
   backButton: {
-    padding: 4
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1a1a1a'
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   
-  // Title
-  title: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    textAlign: 'center', 
-    marginVertical: 20, 
-    color: '#1a1a1a' 
+  // Title Container
+  titleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 20,
+    width: '100%',
+    flexDirection: 'column',
+  },
+  titleCafeName: {
+    fontSize: 26,
+    fontWeight: '900',
+    color: '#1e293b',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.15)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 3,
+    marginBottom: 10,
+    alignSelf: 'center',
+    maxWidth: '100%',
+  },
+  titleUnderline: {
+    width: 80,
+    height: 4,
+    backgroundColor: '#007AFF',
+    borderRadius: 2,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
+    elevation: 3,
   },
   
   // Step Cards
   stepCard: { 
     backgroundColor: '#fff', 
-    borderRadius: 16, 
-    padding: 20, 
+    borderRadius: 12, 
+    padding: 16, 
     marginHorizontal: 20, 
-    marginBottom: 20, 
+    marginBottom: 16, 
     shadowColor: "#000", 
-    shadowOffset: { width: 0, height: 2 }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 8, 
-    elevation: 4
+    shadowOffset: { width: 0, height: 1 }, 
+    shadowOpacity: 0.08, 
+    shadowRadius: 4, 
+    elevation: 3,
+    overflow: 'hidden'
   },
   stepHeader: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginBottom: 20,
+    marginBottom: 16,
     flexWrap: 'wrap'
   },
   stepIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#f0f8ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12
+    marginRight: 10
   },
   stepTitle: { 
     fontSize: 16, 
-    fontWeight: '600', 
-    color: '#1a1a1a',
+    fontWeight: '700', 
+    color: '#1e293b',
     flex: 1,
-    flexWrap: 'wrap'
+    flexWrap: 'wrap',
+    letterSpacing: 0.3
   },
 
   // Rooms Selection
   roomsContainer: {
-    gap: 12
+    gap: 8
   },
   roomOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: '#f8f9fa'
   },
   roomOptionSelected: {
@@ -1120,9 +1209,10 @@ const styles = StyleSheet.create({
   },
   roomName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 4
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 4,
+    letterSpacing: 0.3
   },
   roomNameSelected: {
     color: '#007AFF'
@@ -1134,16 +1224,16 @@ const styles = StyleSheet.create({
 
   // Systems Selection
   systemsContainer: {
-    gap: 12
+    gap: 8
   },
   systemOption: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    padding: 12,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 12,
+    borderRadius: 10,
     backgroundColor: '#f8f9fa'
   },
   systemOptionSelected: {
@@ -1155,9 +1245,10 @@ const styles = StyleSheet.create({
   },
   systemName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 4
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 4,
+    letterSpacing: 0.3
   },
   systemNameSelected: {
     color: '#007AFF'
@@ -1185,10 +1276,11 @@ const styles = StyleSheet.create({
   },
   counterLabel: { 
     fontSize: 16, 
-    color: '#1a1a1a',
-    fontWeight: '500',
+    color: '#1e293b',
+    fontWeight: '600',
     flex: 1,
-    marginRight: 16
+    marginRight: 16,
+    letterSpacing: 0.3
   },
   counterControls: { 
     flexDirection: 'row', 
@@ -1227,10 +1319,11 @@ const styles = StyleSheet.create({
     marginBottom: 16
   },
   inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#1a1a1a',
-    marginBottom: 8
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1e293b',
+    marginBottom: 8,
+    letterSpacing: 0.3
   },
   textInput: {
     borderWidth: 1,
@@ -1240,6 +1333,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: '#f8f9fa',
     color: '#1a1a1a'
+  },
+  textInputError: {
+    borderColor: '#FF3B30',
+    backgroundColor: '#fff5f5'
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#FF3B30',
+    marginTop: 4,
+    marginLeft: 4
+  },
+  successText: {
+    fontSize: 12,
+    color: '#34C759',
+    marginTop: 4,
+    marginLeft: 4
   },
 
   // Availability
@@ -1271,8 +1380,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    padding: 20, 
-    paddingBottom: 40, 
+    padding: 16, 
+    paddingBottom: 20, 
     backgroundColor: '#fff', 
     borderTopWidth: 1, 
     borderTopColor: '#f0f0f0',
@@ -1280,7 +1389,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 8
+    elevation: 8,
+    zIndex: 1000
   },
   priceContainer: {
     flex: 1
@@ -1312,8 +1422,9 @@ const styles = StyleSheet.create({
   },
   bookButtonText: { 
     color: '#fff', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+    fontSize: 18, 
+    fontWeight: '800',
+    letterSpacing: 0.5
   },
 
   // Modal
@@ -1360,16 +1471,18 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '500'
+    color: '#1e293b',
+    fontWeight: '700',
+    letterSpacing: 0.3
   },
   detailValue: {
     fontSize: 14,
-    color: '#1a1a1a',
+    color: '#1e293b',
     fontWeight: '600',
     textAlign: 'right',
     flex: 1,
-    marginLeft: 16
+    marginLeft: 16,
+    letterSpacing: 0.2
   },
   totalPriceRow: {
     flexDirection: 'row',
@@ -1766,9 +1879,10 @@ const styles = StyleSheet.create({
   },
   systemsListTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 8
+    fontWeight: '700',
+    color: '#1e293b',
+    marginBottom: 8,
+    letterSpacing: 0.3
   },
   systemListItem: {
     flexDirection: 'row',
@@ -1780,8 +1894,9 @@ const styles = StyleSheet.create({
   },
   systemListName: {
     fontSize: 14,
-    color: '#1a1a1a',
-    fontWeight: '500'
+    color: '#1e293b',
+    fontWeight: '600',
+    letterSpacing: 0.2
   },
   systemListPrice: {
     fontSize: 12,

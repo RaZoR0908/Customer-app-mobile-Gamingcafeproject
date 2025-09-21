@@ -1,13 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, SafeAreaView, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, TextInput, SafeAreaView, Alert, RefreshControl, ScrollView, Dimensions, Animated } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import cafeService from '../services/cafeService';
 import CafeCard from '../components/CafeCard';
 import * as Location from 'expo-location';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 // 1. Import the hook to get the device's safe area dimensions
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
+
+const { width, height } = Dimensions.get('window');
 
 // Helper function to calculate distance (we'll use this to find nearby cafes)
 const getDistance = (lat1, lon1, lat2, lon2) => {
@@ -41,6 +44,7 @@ const HomeScreen = ({ navigation }) => {
 
   // 2. Get the safe area insets (padding) for the top and bottom of the screen
   const insets = useSafeAreaInsets();
+
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -250,26 +254,33 @@ const HomeScreen = ({ navigation }) => {
   };
 
   return (
-    // 3. Use a regular View as the root, as we will apply padding manually
     <View style={styles.container}>
-      {/* 4. Apply the top inset as padding to the header */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
-        <TouchableOpacity style={styles.headerIconLeft} onPress={() => navigation.navigate('MyBookings')}>
-          <Feather name="book-open" size={24} color="#333" />
-        </TouchableOpacity>
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeText}>Welcome,</Text>
-          <Text style={styles.userName}>{user?.name}!</Text>
-        </View>
-        <View style={styles.headerIconsRight}>
-          <TouchableOpacity style={styles.headerIconRight} onPress={() => navigation.navigate('Wallet')}>
-            <Feather name="credit-card" size={24} color="#333" />
+      {/* Beautiful Header with Gradient */}
+      <LinearGradient
+        colors={['#1e293b', '#0f172a']}
+        style={[styles.header, { paddingTop: insets.top + 15 }]}
+      >
+        {/* Clean Header Content */}
+        <View style={styles.headerContent}>
+          <TouchableOpacity style={styles.navIcon} onPress={() => navigation.navigate('MyBookings')}>
+            <Ionicons name="book-outline" size={22} color="#ffffff" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIconRight} onPress={logout}>
-            <Feather name="log-out" size={24} color="#333" />
-          </TouchableOpacity>
+          
+          <View style={styles.welcomeSection}>
+            <Text style={styles.userName}>{user?.name}</Text>
+            <Text style={styles.greeting}>Ready to game? 🎮</Text>
+          </View>
+          
+          <View style={styles.navIconsRight}>
+            <TouchableOpacity style={styles.navIcon} onPress={() => navigation.navigate('Wallet')}>
+              <Ionicons name="wallet-outline" size={22} color="#ffffff" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.navIcon} onPress={logout}>
+              <Ionicons name="log-out-outline" size={22} color="#ffffff" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      </LinearGradient>
 
       {error && !searchQuery && (
         <View style={styles.errorContainer}>
@@ -342,18 +353,22 @@ const HomeScreen = ({ navigation }) => {
           />
         }
         ListHeaderComponent={
-          <>
-            <Text style={styles.listTitle}>{listTitle}</Text>
+          <View style={styles.listHeaderContainer}>
+            <View style={styles.titleContainer}>
+              <Ionicons name="location-outline" size={24} color="#3b82f6" style={styles.titleIcon} />
+              <Text style={styles.listTitle}>{listTitle}</Text>
+            </View>
             <View style={styles.searchContainer}>
-              <Feather name="search" size={20} color="#888" style={styles.searchIcon} />
+              <Ionicons name="search-outline" size={20} color="#6b7280" style={styles.searchIcon} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search all cafes..."
+                placeholder="Search Gaming Cafes..."
+                placeholderTextColor="#9ca3af"
                 value={searchQuery}
                 onChangeText={(text) => handleSearch(text)}
               />
             </View>
-          </>
+          </View>
         }
         ListEmptyComponent={
           loading ? (
@@ -375,12 +390,13 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    backgroundColor: '#f5f5f5' 
+    backgroundColor: '#f8fafc' 
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666'
+    color: '#6b7280',
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,
@@ -390,93 +406,145 @@ const styles = StyleSheet.create({
   },
   container: { 
     flex: 1, 
-    backgroundColor: '#f5f5f5' 
+    backgroundColor: '#f8fafc' 
   },
   header: { 
     paddingHorizontal: 20, 
-    paddingBottom: 10, // Only bottom padding is fixed
-    backgroundColor: '#fff', 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+    paddingBottom: 20,
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    minHeight: 60,
   },
-  headerIconLeft: {
+  navIcon: {
     width: 40,
-    alignItems: 'flex-start',
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
   },
-  headerIconsRight: {
+  navIconsRight: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
   },
-  headerIconRight: {
-    width: 40,
+  welcomeSection: {
     alignItems: 'center',
-    marginLeft: 8,
-  },
-  welcomeContainer: {
     flex: 1,
-    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  welcomeText: {
-    fontSize: 16,
-    color: '#666',
+  greeting: {
+    fontSize: 14,
+    color: '#fbbf24',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 4,
   },
   userName: { 
-    fontSize: 24, 
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 22, 
+    fontWeight: '700',
+    color: '#ffffff',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.8)',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 4,
+  },
+  listHeaderContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  titleIcon: {
+    marginRight: 10,
   },
   listTitle: { 
-    fontSize: 22, 
-    fontWeight: 'bold', 
-    marginTop: 20,
-    marginBottom: 10,
+    fontSize: 28, 
+    fontWeight: '900', 
+    color: '#1e293b',
+    flex: 1,
+    letterSpacing: 0.5,
+    textShadowColor: 'rgba(0, 0, 0, 0.1)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
   errorText: { 
     textAlign: 'center', 
     marginTop: 10, 
-    color: '#666', 
+    color: '#6b7280', 
     paddingHorizontal: 20,
     fontSize: 14,
+    fontWeight: '500',
   },
   errorContainer: {
     alignItems: 'center',
     marginVertical: 20,
     paddingHorizontal: 20,
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    borderRadius: 15,
+    paddingVertical: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   retryButton: {
-    backgroundColor: '#007bff',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginTop: 10,
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 25,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 15,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   retryButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     textAlign: 'center',
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginTop: 15,
-    marginBottom: 15,
-    paddingHorizontal: 10,
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 15,
+    height: 56,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
-    height: 50,
     fontSize: 16,
+    color: '#1e293b',
+    fontWeight: '500',
   },
 });
 

@@ -9,9 +9,11 @@ import {
   TouchableOpacity,
   Modal,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import bookingService from '../services/bookingService';
 import cafeService from '../services/cafeService';
 import { useFocusEffect } from '@react-navigation/native';
@@ -23,6 +25,13 @@ const MyBookingsScreen = ({ navigation }) => {
   const [cafes, setCafes] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  // Hide the navigation header
+  React.useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: false,
+    });
+  }, [navigation]);
   
   // Calendar filter states
   const [showCalendar, setShowCalendar] = useState(false);
@@ -247,14 +256,60 @@ const MyBookingsScreen = ({ navigation }) => {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <LinearGradient
+          colors={['#1e293b', '#0f172a']}
+          style={styles.header}
+        >
+          <View style={styles.headerContent}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#ffffff" />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitlePrefix}>My</Text>
+              <Text style={styles.headerTitleMain}>Bookings</Text>
+              <View style={styles.headerUnderline} />
+            </View>
+            
+            <View style={{ width: 40 }} />
+          </View>
+        </LinearGradient>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading your bookings...</Text>
+        </View>
+      </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <LinearGradient
+        colors={['#1e293b', '#0f172a']}
+        style={styles.header}
+      >
+        <View style={styles.headerContent}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={styles.headerTitlePrefix}>My</Text>
+            <Text style={styles.headerTitleMain}>Bookings</Text>
+            <View style={styles.headerUnderline} />
+          </View>
+          
+          <View style={{ width: 40 }} />
+        </View>
+      </LinearGradient>
+
       {error ? (
         <View style={styles.centered}>
           <Text style={styles.errorText}>{error}</Text>
@@ -263,21 +318,25 @@ const MyBookingsScreen = ({ navigation }) => {
         <>
           <FlatList
             data={bookings}
-            renderItem={({ item }) => (
+            renderItem={({ item, index }) => (
               <BookingCard 
                 booking={item} 
                 cafe={cafes[item.cafe]} 
                 onPayExtension={handlePayExtension}
                 onPayPending={handlePayPending}
                 onCancel={handleCancelBooking}
+                index={index}
+                isLast={index === bookings.length - 1}
               />
             )}
             keyExtractor={(item) => item._id}
             contentContainerStyle={styles.listContainer}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            overScrollMode="never"
+            scrollEventThrottle={16}
             ListHeaderComponent={
               <View>
-                <Text style={styles.title}>My Bookings</Text>
-                
                 {/* Date Filter Header */}
                 <TouchableOpacity 
                   style={styles.dateFilterContainer}
@@ -321,32 +380,37 @@ const MyBookingsScreen = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
                 
-                <Calendar
-                  onDayPress={handleDateSelect}
-                  markedDates={markedDates}
-                  theme={{
-                    backgroundColor: '#ffffff',
-                    calendarBackground: '#ffffff',
-                    textSectionTitleColor: '#b6c1cd',
-                    selectedDayBackgroundColor: '#007AFF',
-                    selectedDayTextColor: '#ffffff',
-                    todayTextColor: '#007AFF',
-                    dayTextColor: '#2d4150',
-                    textDisabledColor: '#d9e1e8',
-                    dotColor: '#007AFF',
-                    selectedDotColor: '#ffffff',
-                    arrowColor: '#007AFF',
-                    disabledArrowColor: '#d9e1e8',
-                    monthTextColor: '#2d4150',
-                    indicatorColor: '#007AFF',
-                    textDayFontWeight: '300',
-                    textMonthFontWeight: 'bold',
-                    textDayHeaderFontWeight: '300',
-                    textDayFontSize: 16,
-                    textMonthFontSize: 16,
-                    textDayHeaderFontSize: 13
-                  }}
-                />
+                <ScrollView 
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.calendarScrollContent}
+                >
+                  <Calendar
+                    onDayPress={handleDateSelect}
+                    markedDates={markedDates}
+                    theme={{
+                      backgroundColor: '#ffffff',
+                      calendarBackground: '#ffffff',
+                      textSectionTitleColor: '#b6c1cd',
+                      selectedDayBackgroundColor: '#007AFF',
+                      selectedDayTextColor: '#ffffff',
+                      todayTextColor: '#007AFF',
+                      dayTextColor: '#2d4150',
+                      textDisabledColor: '#d9e1e8',
+                      dotColor: '#007AFF',
+                      selectedDotColor: '#ffffff',
+                      arrowColor: '#007AFF',
+                      disabledArrowColor: '#d9e1e8',
+                      monthTextColor: '#2d4150',
+                      indicatorColor: '#007AFF',
+                      textDayFontWeight: '300',
+                      textMonthFontWeight: 'bold',
+                      textDayHeaderFontWeight: '300',
+                      textDayFontSize: 16,
+                      textMonthFontSize: 16,
+                      textDayHeaderFontSize: 13
+                    }}
+                  />
+                </ScrollView>
               </View>
             </View>
           </Modal>
@@ -357,18 +421,109 @@ const MyBookingsScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#f5f5f5' },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  listContainer: { padding: 20 },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 15, color: '#333' },
+  safeArea: { 
+    flex: 1, 
+    backgroundColor: '#f8f9fa' 
+  },
+  centered: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  listContainer: { 
+    padding: 20,
+    paddingBottom: 40
+  },
+  header: {
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 50,
+    position: 'relative',
+  },
+  backButton: {
+    position: 'absolute',
+    left: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 60,
+    flexDirection: 'column',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+  },
+  headerTitlePrefix: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.8,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  headerTitleMain: {
+    fontSize: 24,
+    fontWeight: '900',
+    color: '#ffffff',
+    letterSpacing: 1.2,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  headerUnderline: {
+    width: 60,
+    height: 3,
+    backgroundColor: '#007AFF',
+    marginTop: 4,
+    borderRadius: 2,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#1e293b',
+    marginTop: 10,
+    fontWeight: '600',
+    letterSpacing: 0.3
+  },
   emptyText: {
     textAlign: 'center',
     fontSize: 16,
-    color: '#666',
+    color: '#6b7280',
+    fontWeight: '500',
+    letterSpacing: 0.2
   },
   errorText: {
-    color: 'red',
+    color: '#dc3545',
     fontSize: 16,
+    fontWeight: '600',
+    letterSpacing: 0.3
   },
   
   // Date Filter Styles
@@ -376,11 +531,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 12,
     marginBottom: 20,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF'
   },
   dateFilterContent: {
     flexDirection: 'row',
@@ -390,10 +547,11 @@ const styles = StyleSheet.create({
   },
   dateFilterText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: '700',
+    color: '#1e293b',
     flex: 1,
     marginLeft: 10,
+    letterSpacing: 0.3
   },
   
   // Calendar Modal Styles
@@ -406,14 +564,19 @@ const styles = StyleSheet.create({
   calendarContainer: {
     backgroundColor: '#fff',
     borderRadius: 16,
-    margin: 20,
-    maxWidth: 350,
-    width: '90%',
-    elevation: 5,
+    margin: 10,
+    maxWidth: 380,
+    width: '95%',
+    maxHeight: '90%',
+    elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
+  },
+  calendarScrollContent: {
+    flexGrow: 1,
+    paddingBottom: 10,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -425,8 +588,9 @@ const styles = StyleSheet.create({
   },
   calendarTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: '700',
+    color: '#1e293b',
+    letterSpacing: 0.3
   },
   closeButton: {
     padding: 4,
